@@ -11,6 +11,7 @@ import type { SubmissionEnvelope } from "@40kdc-meta/shared";
 import { projectSubmission, reprocessSubmission, type ProjectionSummary } from "./import";
 import { sha256Hex } from "./hash";
 import { handleQuery } from "./query";
+import { handleAdmin } from "./admin";
 import { CORS_HEADERS, json } from "./http";
 
 export interface Env {
@@ -26,6 +27,8 @@ export interface Env {
   DEV_ALLOW_ALL?: string;
   /** Per-owner daily query cap (default 5000). */
   MAX_QUERIES_PER_DAY?: string;
+  /** Comma-separated owner subs allowed to moderate via /admin/* (Phase 4). */
+  ADMIN_OWNERS?: string;
 }
 
 export default {
@@ -46,6 +49,9 @@ export default {
       }
       if (url.pathname === "/v1" || url.pathname.startsWith("/v1/")) {
         return await handleQuery(request, env, url);
+      }
+      if (url.pathname.startsWith("/admin/")) {
+        return await handleAdmin(request, env, url);
       }
       return new Response("Not found", { status: 404 });
     } catch (err) {

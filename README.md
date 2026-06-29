@@ -7,11 +7,12 @@ and a Cloudflare backend normalizes each list into [`@alpaca-software/40kdc-data
 entity IDs and stores it in a public, queryable form: find a list, "best in
 faction" this week, most-played units, faction representation, and so on.
 
-> **Status: capture → normalize pipeline working end to end.** The consent-based
-> MV3 extension (Phase 1) captures BCP army lists; the Worker stores raw in R2,
-> lands a `pending` submission, and normalizes each list into the D1 projection
-> (Phase 3) — deduped, reprocessable. Next: curing/auth (Phase 2), then the
-> query API + browse UI. See the delivery roadmap below.
+> **Status: full capture → publish pipeline working.** The consent-based MV3
+> extension (Phase 1) captures BCP army lists; the Worker stores raw in R2,
+> normalizes each list into the D1 projection (Phase 3), an admin accepts it
+> (Phase 4), and the key-authed `/v1` query API (Phase 5) serves the accepted,
+> consent-gated data. Remaining: the browse + admin UIs (Phase 6), ingest
+> hardening (Phase 2), and launch/consent ops (Phase 7).
 
 ## Why this is trustworthy
 
@@ -113,7 +114,9 @@ opt out.
    (`tryImportRoster`) and projected into D1 at ingest; lists dedup by
    content_hash with a corroboration trail, and `/reprocess` re-derives rows
    from raw when the parser improves.
-4. **Admin panel** — moderation queue, blocking, list reconciliation.
+4. **Admin panel** ✓ *(backend)* — authed moderation endpoints (`/admin/queue`,
+   accept/reject/quarantine a submission, block a submitter); accepting is what
+   makes a list public. The visual panel is a Svelte SPA tracked with Phase 6.
 5. **Query API + stats** ✓ — key-authed `/v1` read API (entitlement tokens from
    keys.alpacasoft.dev) over accepted, consent-gated data: events, lists,
    best-in-faction, most-played units, faction rep; per-owner daily quota. See
