@@ -40,6 +40,17 @@ export interface BcpPlacement {
   draws: number | null;
 }
 
+/** One BCP API response observed by the extension, forwarded verbatim. */
+export interface CapturedResponse {
+  url: string;
+  method: string;
+  status: number;
+  /** Parsed JSON body when the response was JSON; else the raw text. */
+  body: unknown;
+  /** Client capture time, ms epoch. */
+  capturedAt: number;
+}
+
 /**
  * The ingestion contract: what the browser extension POSTs per capture.
  * `raw` is the untouched payload as received from BCP, retained verbatim in R2
@@ -54,4 +65,6 @@ export interface SubmissionEnvelope {
   lists: BcpListCapture[];
   /** Opaque raw payload as received from BCP. */
   raw: unknown;
+  /** Raw BCP responses observed this run, forwarded verbatim (v1 passthrough). */
+  captures?: CapturedResponse[];
 }

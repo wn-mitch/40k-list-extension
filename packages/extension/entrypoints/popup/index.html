@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>40kdc-meta capture</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font: 13px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      }
+      body {
+        width: 320px;
+        margin: 0;
+        padding: 14px;
+      }
+      h1 {
+        font-size: 14px;
+        margin: 0 0 10px;
+      }
+      .consent {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px;
+        border: 1px solid color-mix(in srgb, currentColor 20%, transparent);
+        border-radius: 8px;
+        margin-bottom: 12px;
+      }
+      .consent label {
+        font-weight: 600;
+      }
+      .consent .state {
+        margin-left: auto;
+        font-variant: small-caps;
+        opacity: 0.7;
+      }
+      .meta {
+        font-size: 11px;
+        opacity: 0.8;
+        margin-bottom: 12px;
+      }
+      .meta div {
+        overflow-wrap: anywhere;
+      }
+      .meta code {
+        font-size: 11px;
+      }
+      .actions {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 12px;
+      }
+      button {
+        flex: 1;
+        padding: 6px 8px;
+        border-radius: 6px;
+        border: 1px solid color-mix(in srgb, currentColor 25%, transparent);
+        background: transparent;
+        color: inherit;
+        cursor: pointer;
+        font: inherit;
+      }
+      button:hover {
+        background: color-mix(in srgb, currentColor 8%, transparent);
+      }
+      h2 {
+        font-size: 12px;
+        margin: 0 0 6px;
+        opacity: 0.7;
+      }
+      ul {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        max-height: 220px;
+        overflow-y: auto;
+      }
+      li {
+        padding: 6px 0;
+        border-top: 1px solid color-mix(in srgb, currentColor 12%, transparent);
+        font-size: 11px;
+      }
+      li .when {
+        opacity: 0.6;
+      }
+      li.error {
+        color: #dc2626;
+      }
+      .empty {
+        opacity: 0.55;
+        font-size: 11px;
+        padding: 6px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>40kdc-meta capture</h1>
+
+    <div class="consent">
+      <input type="checkbox" id="consent" />
+      <label for="consent">Send captured lists</label>
+      <span class="state" id="consent-state">off</span>
+    </div>
+
+    <div class="meta">
+      <div>Ingest: <code id="ingest-url">…</code></div>
+      <div>Submitter ID: <code id="submitter-id">…</code></div>
+    </div>
+
+    <div class="actions">
+      <button id="send-now" type="button">Send now</button>
+      <button id="clear" type="button">Clear log</button>
+    </div>
+
+    <h2>Activity</h2>
+    <ul id="log"></ul>
+
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>

@@ -10,10 +10,12 @@
   ],
   "scripts": {
     "test": "vitest run",
-    "typecheck": "tsc -p packages/shared/tsconfig.json && tsc -p packages/normalizer/tsconfig.json && tsc -p packages/worker/tsconfig.json",
+    "typecheck": "tsc -p packages/shared/tsconfig.json && tsc -p packages/normalizer/tsconfig.json && tsc -p packages/worker/tsconfig.json && npm -w @40kdc-meta/extension run compile",
     "migrate:local": "wrangler d1 migrations apply 40kdc_meta_db --local --config packages/worker/wrangler.jsonc",
     "migrate:remote": "wrangler d1 migrations apply 40kdc_meta_db --remote --config packages/worker/wrangler.jsonc",
-    "dev:worker": "npm -w @40kdc-meta/worker run dev"
+    "dev:worker": "npm -w @40kdc-meta/worker run dev",
+    "build:ext": "npm -w @40kdc-meta/extension run build",
+    "zip:ext": "npm -w @40kdc-meta/extension run zip"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20250101.0",

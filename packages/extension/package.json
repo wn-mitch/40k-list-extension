@@ -1,0 +1,19 @@
+{
+  "name": "@40kdc-meta/extension",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wxt",
+    "build": "wxt build",
+    "zip": "wxt zip",
+    "compile": "wxt prepare && tsc --noEmit",
+    "postinstall": "wxt prepare"
+  },
+  "dependencies": {
+    "@40kdc-meta/shared": "*"
+  },
+  "devDependencies": {
+    "wxt": "^0.20.27"
+  }
+}

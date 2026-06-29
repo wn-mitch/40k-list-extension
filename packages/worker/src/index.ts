@@ -16,10 +16,21 @@ export interface Env {
   RAW: R2Bucket;
 }
 
+// CORS: the MV3 background fetch is privileged and usually skips CORS, but the
+// same endpoints serve the browser web/admin later — make responses CORS-safe now.
+const CORS_HEADERS: Record<string, string> = {
+  "access-control-allow-origin": "*",
+  "access-control-allow-methods": "POST,GET,OPTIONS",
+  "access-control-allow-headers": "content-type",
+};
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
     try {
+      if (request.method === "OPTIONS") {
+        return new Response(null, { status: 204, headers: CORS_HEADERS });
+      }
       if (request.method === "GET" && url.pathname === "/health") {
         return json({ ok: true, service: "40kdc-meta-ingest", phase: 0 });
       }
@@ -87,7 +98,7 @@ async function handleIngest(request: Request, env: Env): Promise<Response> {
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { "content-type": "application/json" },
+    headers: { "content-type": "application/json", ...CORS_HEADERS },
   });
 }
 

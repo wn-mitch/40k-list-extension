@@ -1,0 +1,40 @@
+name: Extension release
+
+# Verifiable-build story: a PUBLIC workflow builds the Chromium store zip from a
+# tagged commit and emits signed SLSA build provenance. Byte-reproducible
+# bundling is impractical for any bundler; signed provenance from public CI plus
+# the committed lockfile is the trust artifact. Store upload stays manual for v1.
+on:
+  push:
+    tags:
+      - "ext-v*"
+
+permissions:
+  contents: write # create the release + upload the zip asset
+  id-token: write # OIDC token for build provenance
+  attestations: write # write the provenance attestation
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Build Chromium store zip
+        run: npm -w @40kdc-meta/extension run zip
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: packages/extension/.output/*-chrome.zip
+      - name: Publish release with the zip
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" \
+            packages/extension/.output/*-chrome.zip \
+            --title "${GITHUB_REF_NAME}" \
+            --notes "Chromium MV3 build from ${GITHUB_SHA}. Verify provenance: gh attestation verify <zip> --repo ${GITHUB_REPOSITORY}"

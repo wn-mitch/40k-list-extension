@@ -7,9 +7,10 @@ and a Cloudflare backend normalizes each list into [`@alpaca-software/40kdc-data
 entity IDs and stores it in a public, queryable form: find a list, "best in
 faction" this week, most-played units, faction representation, and so on.
 
-> **Status: Phase 0 (scaffold).** Nothing talks to BCP yet. This repo currently
-> stands up the workspace, the storage schema, and the data-package integration.
-> See the delivery roadmap below.
+> **Status: Phase 1 (capture spike) — in progress.** Phase 0 (workspace, D1
+> schema, normalizer) is on `main`. Phase 1a — the consent-based MV3 capture
+> extension — is built and tested; pinning BCP's exact response shapes (1b)
+> needs a live authenticated session. See the delivery roadmap below.
 
 ## Why this is trustworthy
 
@@ -38,6 +39,7 @@ packages/
   shared/      TS types: BCP capture shapes, D1 rows, consent + submission model
   normalizer/  BCP list text -> resolved 40kdc Roster -> flat rows (uses the package)
   worker/      Cloudflare Worker: ingestion (+ query API later)
+  extension/   MV3 browser extension: consent-based BCP capture -> /ingest
   web/         browse UI -> lists.alpacasoft.dev          (later phase)
   admin/       moderation queue + reconciliation           (later phase)
 migrations/    D1 schema migrations
@@ -61,10 +63,49 @@ Before deploying for real: `wrangler d1 create 40kdc_meta_db` and
 `wrangler r2 bucket create 40kdc-meta-raw`, then paste the D1 `database_id` into
 `packages/worker/wrangler.jsonc`.
 
+## How the capture extension works
+
+`packages/extension/` is a Manifest-V3 (Chromium) extension built with
+[WXT](https://wxt.dev). It observes the BCP API responses you **already** receive
+while browsing — never other sites or page content at large — and forwards them
+only with your explicit consent:
+
+1. A **MAIN-world** content script patches `fetch`/`XMLHttpRequest` at
+   `document_start` to observe BCP JSON responses, then `postMessage`s them
+   in-page. It never sends anything off-device.
+2. An **ISOLATED** bridge relays those captures to the background service worker
+   and renders the upload toast.
+3. The **background service worker is the single consent gate** — the only code
+   that ever makes an off-device request. With consent **OFF (the default)**,
+   captures are dropped, never buffered. With consent ON, it batches captures
+   and POSTs them to the ingestion Worker's `/ingest`.
+4. Every successful upload shows a **toast** and appends to the popup's
+   **activity log**, so you always see when data leaves your browser.
+
+v1 forwards responses **raw** (verbatim); typed list extraction waits until
+BCP's response shapes are pinned against a live session (Phase 1b).
+
+```bash
+npm run build:ext   # -> packages/extension/.output/chrome-mv3 (load unpacked)
+npm run zip:ext     # -> packages/extension/.output/*-chrome.zip (store build)
+```
+
+Store builds are produced by a public CI workflow that emits signed
+[SLSA build provenance](https://slsa.dev). Verify a downloaded zip against the
+workflow + commit that produced it:
+
+```bash
+gh attestation verify <downloaded-zip> --repo <owner>/40kdc-meta
+```
+
+See [`METHODOLOGY.md`](./METHODOLOGY.md) for exactly what is captured and how to
+opt out.
+
 ## Roadmap
 
-0. **Scaffold** (this) — repo, schema, data-package integration.
-1. **Capture spike** — MV3 extension, discover/pin BCP response shapes, upload toast.
+0. **Scaffold** ✓ — repo, schema, data-package integration.
+1. **Capture spike** *(in progress)* — MV3 extension (consent gate + upload
+   toast + activity log), raw-passthrough to `/ingest`; pin BCP shapes (1b).
 2. **Ingestion + curing** — Worker auth/blocklist, raw -> R2, `pending` submissions.
 3. **Normalization + reconciliation** — `tryImportRoster` -> D1, dedup, reprocessing.
 4. **Admin panel** — moderation queue, blocking, list reconciliation.
