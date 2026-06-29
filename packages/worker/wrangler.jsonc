@@ -5,6 +5,14 @@
   "compatibility_date": "2026-06-01",
   "observability": { "enabled": true },
 
+  // Query API config. ENTITLEMENT_PUBLIC_KEYS = the current alpacasoft signer
+  // (keys.alpacasoft.dev/auth/public-key); rotation is add-new / flip / remove
+  // (comma-separated). No secret here — the worker only verifies, never mints.
+  "vars": {
+    "ENTITLEMENT_PUBLIC_KEYS": "hH3klVi_OrYNSfbEToeSFKkNs04jQCZwFTEu0ugXKzY",
+    "MAX_QUERIES_PER_DAY": "5000"
+  },
+
   // Normalized, queryable projection. `database_id` is a placeholder until
   // `wrangler d1 create 40kdc_meta_db` is run (paste the returned id here);
   // local dev + `migrations apply --local` use a name-keyed local SQLite and

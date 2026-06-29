@@ -10,6 +10,8 @@
 import type { SubmissionEnvelope } from "@40kdc-meta/shared";
 import { projectSubmission, reprocessSubmission, type ProjectionSummary } from "./import";
 import { sha256Hex } from "./hash";
+import { handleQuery } from "./query";
+import { CORS_HEADERS, json } from "./http";
 
 export interface Env {
   /** Normalized projection (queryable). */
@@ -18,15 +20,13 @@ export interface Env {
   RAW: R2Bucket;
   /** Enables the guarded /reprocess endpoint (off in production). */
   ALLOW_REPROCESS?: string;
+  /** Pinned Ed25519 signer(s) for the /v1 query API (keys.alpacasoft.dev). */
+  ENTITLEMENT_PUBLIC_KEYS?: string;
+  /** Dev/test only: accept any bearer as the owner. NEVER set in production. */
+  DEV_ALLOW_ALL?: string;
+  /** Per-owner daily query cap (default 5000). */
+  MAX_QUERIES_PER_DAY?: string;
 }
-
-// CORS: the MV3 background fetch is privileged and usually skips CORS, but the
-// same endpoints serve the browser web/admin later — make responses CORS-safe now.
-const CORS_HEADERS: Record<string, string> = {
-  "access-control-allow-origin": "*",
-  "access-control-allow-methods": "POST,GET,OPTIONS",
-  "access-control-allow-headers": "content-type",
-};
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -43,6 +43,9 @@ export default {
       }
       if (request.method === "POST" && url.pathname === "/reprocess") {
         return await handleReprocess(request, env);
+      }
+      if (url.pathname === "/v1" || url.pathname.startsWith("/v1/")) {
+        return await handleQuery(request, env, url);
       }
       return new Response("Not found", { status: 404 });
     } catch (err) {
@@ -122,11 +125,4 @@ async function handleReprocess(request: Request, env: Env): Promise<Response> {
   }
   const summary = await reprocessSubmission(env, body.submissionId);
   return json({ ok: true, ...summary });
-}
-
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { "content-type": "application/json", ...CORS_HEADERS },
-  });
 }

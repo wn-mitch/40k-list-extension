@@ -114,7 +114,10 @@ opt out.
    content_hash with a corroboration trail, and `/reprocess` re-derives rows
    from raw when the parser improves.
 4. **Admin panel** — moderation queue, blocking, list reconciliation.
-5. **Query API + stats** — BIF, most-played units, faction rep (accepted lists only).
+5. **Query API + stats** ✓ — key-authed `/v1` read API (entitlement tokens from
+   keys.alpacasoft.dev) over accepted, consent-gated data: events, lists,
+   best-in-faction, most-played units, faction rep; per-owner daily quota. See
+   [`API.md`](./API.md).
 6. **Browse UI** — `lists.alpacasoft.dev`.
 7. **Consent ops + launch gate** — opt-in/out flows, methodology page, legal review.
 

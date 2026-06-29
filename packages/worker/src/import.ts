@@ -64,6 +64,7 @@ export interface PlannedList {
   listText: string;
   event: PlannedEvent | null;
   player: PlannedPlayer | null;
+  placement: { placing: number | null; wins: number | null; losses: number | null; draws: number | null };
   units: PlannedUnit[];
   coverage: {
     format: string | null;
@@ -195,6 +196,12 @@ export async function planProjection(source: {
       listText: capture.listText,
       event,
       player,
+      placement: {
+        placing: capture.placement?.rank ?? null,
+        wins: capture.placement?.wins ?? null,
+        losses: capture.placement?.losses ?? null,
+        draws: capture.placement?.draws ?? null,
+      },
       units: normalized.units.map((u) => ({
         unitId: u.unit_id,
         rawName: u.raw_name,
@@ -346,8 +353,8 @@ export async function applyProjection(
     if (!existing) {
       listId = crypto.randomUUID();
       await env.DB.prepare(
-        `INSERT INTO lists (id, event_id, player_id, faction_id, detachment_ids, battle_size, points, share_token, content_hash, raw_text_r2_key, import_format, parser_version, first_submission_id, captured_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO lists (id, event_id, player_id, faction_id, detachment_ids, battle_size, points, share_token, content_hash, raw_text_r2_key, import_format, parser_version, first_submission_id, captured_at, placing, wins, losses, draws)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
         .bind(
           listId,
@@ -364,6 +371,10 @@ export async function applyProjection(
           list.parserVersion,
           ctx.submissionId,
           ctx.capturedAt,
+          list.placement.placing,
+          list.placement.wins,
+          list.placement.losses,
+          list.placement.draws,
         )
         .run();
       newLists += 1;
@@ -374,7 +385,7 @@ export async function applyProjection(
       derive = existing.parser_version !== list.parserVersion;
       if (derive) {
         await env.DB.prepare(
-          `UPDATE lists SET event_id = COALESCE(?, event_id), player_id = COALESCE(?, player_id), faction_id = ?, detachment_ids = ?, battle_size = ?, points = ?, share_token = ?, import_format = ?, parser_version = ?, raw_text_r2_key = ? WHERE id = ?`,
+          `UPDATE lists SET event_id = COALESCE(?, event_id), player_id = COALESCE(?, player_id), faction_id = ?, detachment_ids = ?, battle_size = ?, points = ?, share_token = ?, import_format = ?, parser_version = ?, raw_text_r2_key = ?, placing = ?, wins = ?, losses = ?, draws = ? WHERE id = ?`,
         )
           .bind(
             eventId,
@@ -387,6 +398,10 @@ export async function applyProjection(
             list.importFormat,
             list.parserVersion,
             rawTextKey,
+            list.placement.placing,
+            list.placement.wins,
+            list.placement.losses,
+            list.placement.draws,
             listId,
           )
           .run();
