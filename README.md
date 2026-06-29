@@ -40,10 +40,10 @@ per-install id, lands in a `pending` state, and is only made public after
 packages/
   shared/      TS types: BCP capture shapes, D1 rows, consent + submission model
   normalizer/  BCP list text -> resolved 40kdc Roster -> flat rows (uses the package)
-  worker/      Cloudflare Worker: ingestion (+ query API later)
+  worker/      Cloudflare Worker: ingestion + projection + query API + admin + public read tier
   extension/   MV3 browser extension: consent-based BCP capture -> /ingest
-  web/         browse UI -> lists.alpacasoft.dev          (later phase)
-  admin/       moderation queue + reconciliation           (later phase)
+  web/         Svelte SPA browse UI over the /public read tier -> lists.alpacasoft.dev
+  admin/       moderation UI                                  (later; backend lives in worker)
 migrations/    D1 schema migrations
 ```
 
@@ -122,7 +122,10 @@ opt out.
    keys.alpacasoft.dev) over accepted, consent-gated data: events, lists,
    best-in-faction, most-played units, faction rep; per-owner daily quota. See
    [`API.md`](./API.md).
-6. **Browse UI** — `lists.alpacasoft.dev`.
+6. **Browse UI** ✓ *(browse)* — Svelte SPA (`packages/web/`) over a new anonymous,
+   IP-rate-limited `/public` read tier: events, event detail, list browser with
+   filters, list detail (units), and faction/unit/best-in-faction stats. The
+   admin moderation UI is the remaining front-end piece.
 7. **Consent ops + launch gate** — opt-in/out flows, methodology page, legal review.
 
 ## License

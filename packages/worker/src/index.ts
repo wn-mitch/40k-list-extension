@@ -10,7 +10,7 @@
 import type { SubmissionEnvelope } from "@40kdc-meta/shared";
 import { projectSubmission, reprocessSubmission, type ProjectionSummary } from "./import";
 import { sha256Hex } from "./hash";
-import { handleQuery } from "./query";
+import { handleQuery, handlePublicQuery } from "./query";
 import { handleAdmin } from "./admin";
 import { CORS_HEADERS, json } from "./http";
 
@@ -31,6 +31,8 @@ export interface Env {
   ADMIN_OWNERS?: string;
   /** Per-submitter daily ingest cap (anti-flood; default 500). */
   MAX_INGESTS_PER_DAY?: string;
+  /** Per-client-IP daily cap for the anonymous /public read tier (default 2000). */
+  MAX_PUBLIC_QUERIES_PER_DAY?: string;
 }
 
 /** Default per-submitter daily ingest cap when MAX_INGESTS_PER_DAY is unset. */
@@ -54,6 +56,9 @@ export default {
       }
       if (url.pathname === "/v1" || url.pathname.startsWith("/v1/")) {
         return await handleQuery(request, env, url);
+      }
+      if (url.pathname.startsWith("/public/")) {
+        return await handlePublicQuery(request, env, url);
       }
       if (url.pathname.startsWith("/admin/")) {
         return await handleAdmin(request, env, url);

@@ -16,11 +16,14 @@ import { json } from "./http";
 export interface QueryEnv extends VerifyEntitlementEnv {
   DB: D1Database;
   MAX_QUERIES_PER_DAY?: string;
+  /** Per-client-IP daily cap for the anonymous public read tier. */
+  MAX_PUBLIC_QUERIES_PER_DAY?: string;
 }
 
 const DEFAULT_LIMIT = 50;
 const MAX_LIMIT = 200;
 const DEFAULT_MAX_QUERIES = 5000;
+const DEFAULT_MAX_PUBLIC_QUERIES = 2000;
 
 /** Accepted-only predicate for a list aliased `<alias>`. Alias is internal. */
 function accepted(alias: string): string {
@@ -38,47 +41,61 @@ function pageLimit(url: URL): number {
   return Math.min(Math.floor(raw), MAX_LIMIT);
 }
 
-/** Route + gate a `/v1/*` request. */
-export async function handleQuery(
-  request: Request,
-  env: QueryEnv,
-  url: URL,
-): Promise<Response> {
+/** Per-(owner|ip)/day quota using api_usage. Returns true when over the cap. */
+async function overQuota(env: QueryEnv, owner: string, max: number): Promise<boolean> {
+  const day = new Date().toISOString().slice(0, 10); // UTC YYYY-MM-DD
+  const usage = await env.DB.prepare(
+    "INSERT INTO api_usage (owner, day, count) VALUES (?, ?, 1) ON CONFLICT(owner, day) DO UPDATE SET count = count + 1 RETURNING count",
+  )
+    .bind(owner, day)
+    .first<{ count: number }>();
+  return Boolean(usage && usage.count > max);
+}
+
+/** Dispatch a data request whose API prefix (`/v1` or `/public`) is stripped. */
+async function dispatch(env: QueryEnv, url: URL, path: string): Promise<Response> {
+  if (path === "/events") return listEvents(env, url);
+  const eventMatch = path.match(/^\/events\/([^/]+)$/);
+  if (eventMatch) return getEvent(env, decodeURIComponent(eventMatch[1]));
+  if (path === "/lists") return listLists(env, url);
+  const listMatch = path.match(/^\/lists\/([^/]+)$/);
+  if (listMatch) return getList(env, decodeURIComponent(listMatch[1]));
+  if (path === "/stats/units") return statsUnits(env, url);
+  if (path === "/stats/factions") return statsFactions(env, url);
+  if (path === "/stats/bif") return statsBif(env, url);
+  return json({ ok: false, error: "not found" }, 404);
+}
+
+/** Key-authed `/v1/*` query API (entitlement token + per-owner daily quota). */
+export async function handleQuery(request: Request, env: QueryEnv, url: URL): Promise<Response> {
   if (request.method !== "GET") {
     return json({ ok: false, error: "method not allowed" }, 405);
   }
-
   const auth = await authenticate(request, env);
   if (!auth.ok) {
     const error = auth.status === 501 ? "query API not configured" : "unauthorized";
     return json({ ok: false, error }, auth.status);
   }
-
-  // Per-owner daily quota (cheap cost lever; doubles as usage analytics).
-  const day = new Date().toISOString().slice(0, 10); // UTC YYYY-MM-DD
-  const max = Number(env.MAX_QUERIES_PER_DAY) || DEFAULT_MAX_QUERIES;
-  const usage = await env.DB.prepare(
-    "INSERT INTO api_usage (owner, day, count) VALUES (?, ?, 1) ON CONFLICT(owner, day) DO UPDATE SET count = count + 1 RETURNING count",
-  )
-    .bind(auth.owner, day)
-    .first<{ count: number }>();
-  if (usage && usage.count > max) {
+  if (await overQuota(env, auth.owner, Number(env.MAX_QUERIES_PER_DAY) || DEFAULT_MAX_QUERIES)) {
     return json({ ok: false, error: "daily quota exceeded" }, 429);
   }
+  const path = url.pathname.slice("/v1".length);
+  if (path === "/me") return json({ ok: true, owner: auth.owner });
+  return dispatch(env, url, path);
+}
 
-  const path = url.pathname;
-  if (path === "/v1/me") return json({ ok: true, owner: auth.owner });
-  if (path === "/v1/events") return listEvents(env, url);
-  const eventMatch = path.match(/^\/v1\/events\/([^/]+)$/);
-  if (eventMatch) return getEvent(env, decodeURIComponent(eventMatch[1]));
-  if (path === "/v1/lists") return listLists(env, url);
-  const listMatch = path.match(/^\/v1\/lists\/([^/]+)$/);
-  if (listMatch) return getList(env, decodeURIComponent(listMatch[1]));
-  if (path === "/v1/stats/units") return statsUnits(env, url);
-  if (path === "/v1/stats/factions") return statsFactions(env, url);
-  if (path === "/v1/stats/bif") return statsBif(env, url);
-
-  return json({ ok: false, error: "not found" }, 404);
+/** Anonymous public read tier (`/public/*`): same accepted-only + consent-gated
+ *  data as `/v1`, no token, rate-limited per client IP. */
+export async function handlePublicQuery(request: Request, env: QueryEnv, url: URL): Promise<Response> {
+  if (request.method !== "GET") {
+    return json({ ok: false, error: "method not allowed" }, 405);
+  }
+  const ip = request.headers.get("cf-connecting-ip") ?? "anon";
+  const max = Number(env.MAX_PUBLIC_QUERIES_PER_DAY) || DEFAULT_MAX_PUBLIC_QUERIES;
+  if (await overQuota(env, `public:${ip}`, max)) {
+    return json({ ok: false, error: "daily quota exceeded" }, 429);
+  }
+  return dispatch(env, url, url.pathname.slice("/public".length));
 }
 
 // --- /v1/events -------------------------------------------------------------

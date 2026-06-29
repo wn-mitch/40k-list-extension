@@ -1,0 +1,253 @@
+:root {
+  --bg: #0b0d10;
+  --panel: #14181d;
+  --panel-2: #1b2026;
+  --line: #262d35;
+  --ink: #e7ebf0;
+  --muted: #8b97a6;
+  --accent: #c0573a; /* 40kdc ecosystem rust */
+  --accent-ink: #f4d7cd;
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 15px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+a {
+  color: var(--accent-ink);
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
+}
+
+code,
+.mono {
+  font-family: ui-monospace, "SF Mono", "Cascadia Code", Menlo, monospace;
+  font-size: 0.86em;
+}
+
+.wrap {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 0 20px 64px;
+}
+
+header.top {
+  border-bottom: 1px solid var(--line);
+  background: linear-gradient(180deg, var(--panel), var(--bg));
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  backdrop-filter: blur(6px);
+}
+header.top .wrap {
+  display: flex;
+  align-items: baseline;
+  gap: 22px;
+  padding-top: 16px;
+  padding-bottom: 16px;
+}
+.brand {
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  font-size: 17px;
+}
+.brand .dot {
+  color: var(--accent);
+}
+nav {
+  display: flex;
+  gap: 18px;
+  margin-left: auto;
+}
+nav a {
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 14px;
+}
+nav a.active {
+  color: var(--ink);
+}
+
+h1 {
+  font-size: 24px;
+  margin: 28px 0 4px;
+}
+.sub {
+  color: var(--muted);
+  margin: 0 0 20px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 14px;
+}
+.card {
+  display: block;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 14px 16px;
+  transition:
+    border-color 0.15s,
+    transform 0.15s;
+}
+.card:hover {
+  border-color: var(--accent);
+  transform: translateY(-1px);
+  text-decoration: none;
+}
+.card .name {
+  font-weight: 650;
+  color: var(--ink);
+}
+.card .meta {
+  color: var(--muted);
+  font-size: 13px;
+  margin-top: 6px;
+}
+.count {
+  color: var(--accent-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 8px;
+}
+th,
+td {
+  text-align: left;
+  padding: 9px 10px;
+  border-bottom: 1px solid var(--line);
+  font-size: 14px;
+}
+th {
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+tbody tr:hover {
+  background: var(--panel-2);
+}
+td.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.tag {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 12px;
+}
+.pill-warlord {
+  color: var(--accent-ink);
+  border-color: var(--accent);
+}
+
+.bar {
+  height: 7px;
+  border-radius: 4px;
+  background: var(--accent);
+  min-width: 2px;
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 6px 0 16px;
+}
+.controls input,
+.controls select {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  border-radius: 8px;
+  padding: 7px 10px;
+  font: inherit;
+}
+.tabs {
+  display: flex;
+  gap: 8px;
+  margin: 8px 0 18px;
+}
+.tabs button {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  color: var(--muted);
+  border-radius: 8px;
+  padding: 7px 14px;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+}
+.tabs button.active {
+  color: var(--ink);
+  border-color: var(--accent);
+}
+button.more {
+  margin-top: 16px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  border-radius: 8px;
+  padding: 8px 16px;
+  cursor: pointer;
+  font: inherit;
+}
+
+.state {
+  color: var(--muted);
+  padding: 28px 0;
+}
+.state.error {
+  color: #e88b78;
+}
+.back {
+  display: inline-block;
+  margin: 22px 0 6px;
+  color: var(--muted);
+  font-size: 14px;
+}
+.recordbox {
+  display: flex;
+  gap: 18px;
+  flex-wrap: wrap;
+  margin: 14px 0 8px;
+}
+.recordbox .stat {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 16px;
+}
+.recordbox .stat .k {
+  color: var(--muted);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+.recordbox .stat .v {
+  font-size: 20px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
