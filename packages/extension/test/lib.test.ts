@@ -36,34 +36,46 @@ describe("submitterId", () => {
 });
 
 describe("shouldCapture", () => {
-  it("captures a BCP JSON API response", () => {
+  it("captures an army-list JSON response from the BCP API host", () => {
     expect(
       shouldCapture(
-        "https://newprod-api.bestcoastpairings.com/v1/players?eventId=x",
+        "https://newprod-api.bestcoastpairings.com/v1/armylists/GY8OE5IsKi3E",
         "application/json; charset=utf-8",
       ),
     ).toBe(true);
   });
 
-  it("ignores static assets even with a JSON content-type", () => {
+  it("captures event player standings", () => {
     expect(
       shouldCapture(
-        "https://www.bestcoastpairings.com/static/app.js",
+        "https://newprod-api.bestcoastpairings.com/v1/events/xW1yF0a9lBWa/players",
+        "application/json",
+      ),
+    ).toBe(true);
+  });
+
+  it("ignores catalog endpoints (not data-bearing)", () => {
+    expect(
+      shouldCapture(
+        "https://newprod-api.bestcoastpairings.com/v1/gamesystems?limit=100",
         "application/json",
       ),
     ).toBe(false);
   });
 
-  it("ignores non-BCP hosts", () => {
+  it("ignores the web app host (only the API host is captured)", () => {
     expect(
-      shouldCapture("https://evil.example.com/v1/players", "application/json"),
+      shouldCapture(
+        "https://www.bestcoastpairings.com/v1/armylists/GY8OE5IsKi3E",
+        "application/json",
+      ),
     ).toBe(false);
   });
 
   it("ignores a lookalike suffix host", () => {
     expect(
       shouldCapture(
-        "https://bestcoastpairings.com.evil.com/v1/players",
+        "https://newprod-api.bestcoastpairings.com.evil.com/v1/armylists/x",
         "application/json",
       ),
     ).toBe(false);
@@ -72,7 +84,7 @@ describe("shouldCapture", () => {
   it("ignores non-JSON responses", () => {
     expect(
       shouldCapture(
-        "https://newprod-api.bestcoastpairings.com/v1/players",
+        "https://newprod-api.bestcoastpairings.com/v1/armylists/x",
         "text/html",
       ),
     ).toBe(false);

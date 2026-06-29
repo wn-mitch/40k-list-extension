@@ -1,13 +1,20 @@
-/** A BCP host: bestcoastpairings.com or any subdomain of it. */
-export const BCP_HOST_RE = /(^|\.)bestcoastpairings\.com$/;
-
-// Static/asset paths that never carry list/event JSON — cheap noise filter.
-const EXCLUDED_PATH_RE = /\.(js|mjs|css|png|jpe?g|gif|svg|woff2?|ico|map)(\?|$)/i;
+/**
+ * BCP's API host, pinned from a live authenticated session (Phase 1b). The web
+ * app (any `*.bestcoastpairings.com` origin) makes its data requests here; the
+ * MAIN-world interceptor sees them because it patches the page's own `fetch`.
+ */
+export const BCP_API_HOST = "newprod-api.bestcoastpairings.com";
 
 /**
- * v1 capture rule: a BCP host serving a JSON response, excluding obvious
- * auth/static noise. Deliberately broad — narrowed against the real endpoints
- * once they are observed in 1b.
+ * Data-bearing endpoints we keep: army lists and event/player/pairing data.
+ * Pure-catalog lookups (`/v1/gamesystems`, `/v1/leagues`, `/v1/scorecards`, …)
+ * are dropped as noise. Extend this allowlist as new useful endpoints surface.
+ */
+const CAPTURE_PATH_RE = /^\/v1\/(armylists|events|pairings)(\/|$)/;
+
+/**
+ * Capture rule: a JSON response from BCP's API host on a data-bearing endpoint.
+ * Positive allowlist — anything not explicitly matched is ignored.
  */
 export function shouldCapture(url: string, contentType: string | null): boolean {
   let parsed: URL;
@@ -16,8 +23,7 @@ export function shouldCapture(url: string, contentType: string | null): boolean 
   } catch {
     return false;
   }
-  if (!BCP_HOST_RE.test(parsed.hostname)) return false;
-  if (parsed.pathname.startsWith("/auth")) return false;
-  if (EXCLUDED_PATH_RE.test(parsed.pathname)) return false;
+  if (parsed.hostname !== BCP_API_HOST) return false;
+  if (!CAPTURE_PATH_RE.test(parsed.pathname)) return false;
   return Boolean(contentType && contentType.toLowerCase().includes("application/json"));
 }
