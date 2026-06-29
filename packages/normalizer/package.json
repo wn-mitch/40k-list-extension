@@ -1,0 +1,16 @@
+{
+  "name": "@40kdc-meta/normalizer",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "dependencies": {
+    "@40kdc-meta/shared": "*",
+    "@alpaca-software/40kdc-data": "^1.0.13"
+  }
+}

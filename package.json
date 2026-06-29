@@ -1,0 +1,24 @@
+{
+  "name": "40kdc-meta",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Consent-based, open-source repository of competitive 40K army lists, normalized into 40kdc-data entity IDs.",
+  "license": "MIT",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc -p packages/shared/tsconfig.json && tsc -p packages/normalizer/tsconfig.json && tsc -p packages/worker/tsconfig.json",
+    "migrate:local": "wrangler d1 migrations apply 40kdc_meta_db --local --config packages/worker/wrangler.jsonc",
+    "migrate:remote": "wrangler d1 migrations apply 40kdc_meta_db --remote --config packages/worker/wrangler.jsonc",
+    "dev:worker": "npm -w @40kdc-meta/worker run dev"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250101.0",
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0",
+    "wrangler": "^4.0.0"
+  }
+}
