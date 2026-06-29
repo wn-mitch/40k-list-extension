@@ -42,8 +42,26 @@ and under your control.
   account, name, email, or device information.
 - Submissions land in a `pending` state and are only ever made public after
   *curing* (validity + parse + corroboration) in later phases. Player display
-  names are pseudonymized by default; being named is a separate, explicit opt-in,
-  and opt-out is honored.
+  names are pseudonymized by default. Being named is a separate, explicit opt-in,
+  and exclusion is an opt-out — both are described below.
+
+## For players whose lists are captured
+
+- **Lists are published anonymized.** A player is rendered as a
+  `player_<8 hex>` pseudonym derived from their BCP id, never a real name, and
+  only *accepted* lists are ever made public.
+- **Being named is an explicit opt-in.** If you want your list credited under
+  your name, a maintainer records your chosen display name and it replaces the
+  pseudonym.
+- **Exclusion is an opt-out (identity-suppression).** If you ask to be excluded,
+  your name is purged and the pseudonym is forced. The anonymized list itself
+  remains as part of the aggregate meta data (it still counts in statistics) but
+  can no longer be tied to you.
+- **How to request either.** Open an issue on the
+  [repository issue tracker](https://github.com/<owner>/40kdc-meta/issues). A
+  maintainer applies the change; it is durable and survives later captures and
+  reprocessing. (Consent is not self-serve: player ids are public, so naming and
+  exclusion are operator-mediated to prevent impersonation.)
 
 ## How to opt out
 

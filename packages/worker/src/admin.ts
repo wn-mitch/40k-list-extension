@@ -12,6 +12,7 @@
  */
 import { authenticate, type VerifyEntitlementEnv } from "./verify-entitlement";
 import { json } from "./http";
+import { sha256Hex } from "./hash";
 
 export interface AdminEnv extends VerifyEntitlementEnv {
   DB: D1Database;
@@ -21,6 +22,15 @@ export interface AdminEnv extends VerifyEntitlementEnv {
 
 const SUBMISSION_STATUSES = ["pending", "accepted", "quarantined", "rejected"] as const;
 type SubmissionStatus = (typeof SUBMISSION_STATUSES)[number];
+
+const PLAYER_CONSENT_STATES = ["opted_in", "excluded", "unknown"] as const;
+type PlayerConsent = (typeof PLAYER_CONSENT_STATES)[number];
+
+export interface PlayerConsentRequest {
+  bcpPlayerId: string;
+  consent: PlayerConsent;
+  displayName: string | null;
+}
 
 type AdminAuth =
   | { ok: true; owner: string }
@@ -64,6 +74,9 @@ export async function handleAdmin(
   const blockMatch = path.match(/^\/admin\/submitters\/([^/]+)\/block$/);
   if (request.method === "POST" && blockMatch) {
     return setSubmitterBlocked(request, env, decodeURIComponent(blockMatch[1]));
+  }
+  if (request.method === "POST" && path === "/admin/players/consent") {
+    return setPlayerConsent(request, env);
   }
 
   return json({ ok: false, error: "not found" }, 404);
@@ -151,6 +164,51 @@ async function setSubmitterBlocked(
     return json({ ok: false, error: "submitter not found" }, 404);
   }
   return json({ ok: true, submitterId, blocked: body.blocked });
+}
+
+/**
+ * Validate an admin consent-ops body. Pure (no DB) so it is unit-testable.
+ * Opt-out is identity-suppression: `excluded`/`unknown` purge any supplied name.
+ */
+export function parsePlayerConsent(
+  body: unknown,
+): PlayerConsentRequest | { error: string } {
+  if (typeof body !== "object" || body === null) {
+    return { error: "bcpPlayerId required" };
+  }
+  const { bcpPlayerId, consent, displayName } = body as Record<string, unknown>;
+  if (typeof bcpPlayerId !== "string" || bcpPlayerId.trim() === "") {
+    return { error: "bcpPlayerId required" };
+  }
+  if (typeof consent !== "string" || !(PLAYER_CONSENT_STATES as readonly string[]).includes(consent)) {
+    return { error: `consent must be one of ${PLAYER_CONSENT_STATES.join(", ")}` };
+  }
+  if (consent === "opted_in") {
+    if (typeof displayName !== "string" || displayName.trim() === "") {
+      return { error: "displayName required to be named" };
+    }
+    return { bcpPlayerId, consent, displayName: displayName.trim() };
+  }
+  // excluded / unknown — identity purge; any supplied name is ignored.
+  return { bcpPlayerId, consent: consent as PlayerConsent, displayName: null };
+}
+
+async function setPlayerConsent(request: Request, env: AdminEnv): Promise<Response> {
+  const parsed = parsePlayerConsent(await request.json().catch(() => null));
+  if ("error" in parsed) {
+    return json({ ok: false, error: parsed.error }, 400);
+  }
+  const hash = await sha256Hex(parsed.bcpPlayerId);
+  const result = await env.DB.prepare(
+    "UPDATE players SET consent = ?, display_name = ?, updated_at = ? WHERE bcp_player_id_hash = ?",
+  )
+    .bind(parsed.consent, parsed.displayName, Date.now(), hash)
+    .run();
+  if (result.meta.changes === 0) {
+    return json({ ok: false, error: "player not found" }, 404);
+  }
+  // Identity-light response: never echo the name, raw id, or hash.
+  return json({ ok: true, consent: parsed.consent, named: parsed.displayName !== null });
 }
 
 function isStatus(value: unknown): value is SubmissionStatus {

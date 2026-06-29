@@ -5,8 +5,9 @@
   import Lists from "./views/Lists.svelte";
   import ListView from "./views/List.svelte";
   import Stats from "./views/Stats.svelte";
+  import Methodology from "./views/Methodology.svelte";
 
-  type Match = { view: "events" | "event" | "lists" | "list" | "stats"; param?: string };
+  type Match = { view: "events" | "event" | "lists" | "list" | "stats" | "methodology"; param?: string };
 
   function matchRoute(path: string): Match {
     const e = path.match(/^\/events\/(.+)$/);
@@ -15,6 +16,7 @@
     if (l) return { view: "list", param: decodeURIComponent(l[1]) };
     if (path === "/lists") return { view: "lists" };
     if (path === "/stats") return { view: "stats" };
+    if (path === "/methodology") return { view: "methodology" };
     return { view: "events" };
   }
 
@@ -37,6 +39,7 @@
       <a href="#/events" class={navClass("/events")}>Events</a>
       <a href="#/lists" class={navClass("/lists")}>Lists</a>
       <a href="#/stats" class={navClass("/stats")}>Stats</a>
+      <a href="#/methodology" class={navClass("/methodology")}>Methodology</a>
     </nav>
   </div>
 </header>
@@ -50,6 +53,8 @@
     <Lists />
   {:else if matched.view === "stats"}
     <Stats />
+  {:else if matched.view === "methodology"}
+    <Methodology />
   {:else}
     <Events />
   {/if}
