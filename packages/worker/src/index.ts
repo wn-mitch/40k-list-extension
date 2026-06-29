@@ -29,7 +29,12 @@ export interface Env {
   MAX_QUERIES_PER_DAY?: string;
   /** Comma-separated owner subs allowed to moderate via /admin/* (Phase 4). */
   ADMIN_OWNERS?: string;
+  /** Per-submitter daily ingest cap (anti-flood; default 500). */
+  MAX_INGESTS_PER_DAY?: string;
 }
+
+/** Default per-submitter daily ingest cap when MAX_INGESTS_PER_DAY is unset. */
+const DEFAULT_MAX_INGESTS = 500;
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -72,6 +77,19 @@ async function handleIngest(request: Request, env: Env): Promise<Response> {
     .first<{ id: string; blocked: number }>();
   if (submitter?.blocked) {
     return json({ ok: false, error: "submitter blocked" }, 403);
+  }
+
+  // Per-submitter daily rate limit (anti-flood). Namespaced in api_usage so it
+  // never collides with query-API owners.
+  const ingestDay = new Date().toISOString().slice(0, 10);
+  const maxIngests = Number(env.MAX_INGESTS_PER_DAY) || DEFAULT_MAX_INGESTS;
+  const ingestUsage = await env.DB.prepare(
+    "INSERT INTO api_usage (owner, day, count) VALUES (?, ?, 1) ON CONFLICT(owner, day) DO UPDATE SET count = count + 1 RETURNING count",
+  )
+    .bind(`ingest:${envelope.submitterId}`, ingestDay)
+    .first<{ count: number }>();
+  if (ingestUsage && ingestUsage.count > maxIngests) {
+    return json({ ok: false, error: "ingest rate limit exceeded" }, 429);
   }
 
   const now = Date.now();

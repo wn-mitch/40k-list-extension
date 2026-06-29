@@ -10,7 +10,8 @@
   // (comma-separated). No secret here — the worker only verifies, never mints.
   "vars": {
     "ENTITLEMENT_PUBLIC_KEYS": "hH3klVi_OrYNSfbEToeSFKkNs04jQCZwFTEu0ugXKzY",
-    "MAX_QUERIES_PER_DAY": "5000"
+    "MAX_QUERIES_PER_DAY": "5000",
+    "MAX_INGESTS_PER_DAY": "500"
   },
 
   // Normalized, queryable projection. `database_id` is a placeholder until

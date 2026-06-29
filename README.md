@@ -108,8 +108,9 @@ opt out.
 0. **Scaffold** ✓ — repo, schema, data-package integration.
 1. **Capture spike** ✓ — MV3 extension (consent gate + upload toast + activity
    log) capturing `newprod-api.bestcoastpairings.com/v1/*` into `/ingest`.
-2. **Ingestion + curing** *(partial)* — raw -> R2, `pending` submissions, submitter
-   blocklist; auth + rate-limit still to come.
+2. **Ingestion + curing** ✓ — anonymous attributed submissions land `pending`,
+   raw + extracted text in R2, submitter blocklist, and a per-submitter daily
+   ingest rate limit (anti-flood). Curing (accept) is Phase 4.
 3. **Normalization + reconciliation** ✓ — captured army lists are normalized
    (`tryImportRoster`) and projected into D1 at ingest; lists dedup by
    content_hash with a corroboration trail, and `/reprocess` re-derives rows
