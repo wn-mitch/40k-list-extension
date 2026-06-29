@@ -1,19 +1,23 @@
 /**
- * Ingestion Worker — Phase 0 stub.
+ * Ingestion Worker.
  *
  * Accepts a {@link SubmissionEnvelope} from the extension, attributes it to a
- * (non-blocked) submitter, retains the raw payload verbatim in R2, and records
- * a `pending` submission in D1. It deliberately does NOT normalize yet — curing
- * and normalization are later phases. The point of this stub is to prove the
- * R2 + D1 bindings wire up under `wrangler dev`.
+ * (non-blocked) submitter, retains the raw payload verbatim in R2, records a
+ * `pending` submission in D1, and projects the captured army lists into the
+ * normalized D1 tables (see ./import). Raw is the source of truth; the D1
+ * projection is rebuildable via /reprocess when the parser improves.
  */
 import type { SubmissionEnvelope } from "@40kdc-meta/shared";
+import { projectSubmission, reprocessSubmission, type ProjectionSummary } from "./import";
+import { sha256Hex } from "./hash";
 
 export interface Env {
   /** Normalized projection (queryable). */
   DB: D1Database;
   /** Immutable raw captures (source of truth). */
   RAW: R2Bucket;
+  /** Enables the guarded /reprocess endpoint (off in production). */
+  ALLOW_REPROCESS?: string;
 }
 
 // CORS: the MV3 background fetch is privileged and usually skips CORS, but the
@@ -32,10 +36,13 @@ export default {
         return new Response(null, { status: 204, headers: CORS_HEADERS });
       }
       if (request.method === "GET" && url.pathname === "/health") {
-        return json({ ok: true, service: "40kdc-meta-ingest", phase: 0 });
+        return json({ ok: true, service: "40kdc-meta-ingest" });
       }
       if (request.method === "POST" && url.pathname === "/ingest") {
         return await handleIngest(request, env);
+      }
+      if (request.method === "POST" && url.pathname === "/reprocess") {
+        return await handleReprocess(request, env);
       }
       return new Response("Not found", { status: 404 });
     } catch (err) {
@@ -82,17 +89,39 @@ async function handleIngest(request: Request, env: Env): Promise<Response> {
     .run();
 
   const inserted = insert.meta.changes > 0;
+
+  // Normalize + project into D1 on first insert. Raw is already safe in R2, so a
+  // projection failure never fails ingestion — it can be re-run via /reprocess.
+  let projected: ProjectionSummary | null = null;
+  if (inserted) {
+    try {
+      projected = await projectSubmission(env, envelope, { submissionId, capturedAt: now });
+    } catch (err) {
+      console.error("projection failed", err);
+    }
+  }
+
   return json(
     {
       ok: true,
       submissionId: inserted ? submissionId : null,
       duplicate: !inserted,
       status: "pending",
-      lists: envelope.lists.length,
       rawKey,
+      projected,
     },
     inserted ? 202 : 200,
   );
+}
+
+async function handleReprocess(request: Request, env: Env): Promise<Response> {
+  if (env.ALLOW_REPROCESS !== "true") return new Response("Not found", { status: 404 });
+  const body = (await request.json().catch(() => null)) as { submissionId?: string } | null;
+  if (!body || typeof body.submissionId !== "string") {
+    return json({ ok: false, error: "submissionId required" }, 400);
+  }
+  const summary = await reprocessSubmission(env, body.submissionId);
+  return json({ ok: true, ...summary });
 }
 
 function json(body: unknown, status = 200): Response {
@@ -100,12 +129,4 @@ function json(body: unknown, status = 200): Response {
     status,
     headers: { "content-type": "application/json", ...CORS_HEADERS },
   });
-}
-
-async function sha256Hex(input: string): Promise<string> {
-  const bytes = new TextEncoder().encode(input);
-  const digest = await crypto.subtle.digest("SHA-256", bytes);
-  return Array.from(new Uint8Array(digest))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
 }

@@ -7,10 +7,11 @@ and a Cloudflare backend normalizes each list into [`@alpaca-software/40kdc-data
 entity IDs and stores it in a public, queryable form: find a list, "best in
 faction" this week, most-played units, faction representation, and so on.
 
-> **Status: Phase 1 (capture spike) — in progress.** Phase 0 (workspace, D1
-> schema, normalizer) is on `main`. Phase 1a — the consent-based MV3 capture
-> extension — is built and tested; pinning BCP's exact response shapes (1b)
-> needs a live authenticated session. See the delivery roadmap below.
+> **Status: capture → normalize pipeline working end to end.** The consent-based
+> MV3 extension (Phase 1) captures BCP army lists; the Worker stores raw in R2,
+> lands a `pending` submission, and normalizes each list into the D1 projection
+> (Phase 3) — deduped, reprocessable. Next: curing/auth (Phase 2), then the
+> query API + browse UI. See the delivery roadmap below.
 
 ## Why this is trustworthy
 
@@ -104,10 +105,14 @@ opt out.
 ## Roadmap
 
 0. **Scaffold** ✓ — repo, schema, data-package integration.
-1. **Capture spike** *(in progress)* — MV3 extension (consent gate + upload
-   toast + activity log), raw-passthrough to `/ingest`; pin BCP shapes (1b).
-2. **Ingestion + curing** — Worker auth/blocklist, raw -> R2, `pending` submissions.
-3. **Normalization + reconciliation** — `tryImportRoster` -> D1, dedup, reprocessing.
+1. **Capture spike** ✓ — MV3 extension (consent gate + upload toast + activity
+   log) capturing `newprod-api.bestcoastpairings.com/v1/*` into `/ingest`.
+2. **Ingestion + curing** *(partial)* — raw -> R2, `pending` submissions, submitter
+   blocklist; auth + rate-limit still to come.
+3. **Normalization + reconciliation** ✓ — captured army lists are normalized
+   (`tryImportRoster`) and projected into D1 at ingest; lists dedup by
+   content_hash with a corroboration trail, and `/reprocess` re-derives rows
+   from raw when the parser improves.
 4. **Admin panel** — moderation queue, blocking, list reconciliation.
 5. **Query API + stats** — BIF, most-played units, faction rep (accepted lists only).
 6. **Browse UI** — `lists.alpacasoft.dev`.

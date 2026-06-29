@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "dependencies": {
-    "@40kdc-meta/shared": "*"
+    "@40kdc-meta/shared": "*",
+    "@40kdc-meta/normalizer": "*"
   },
   "scripts": {
     "dev": "wrangler dev",
