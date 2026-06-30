@@ -5,6 +5,11 @@
   "compatibility_date": "2026-06-01",
   "observability": { "enabled": true },
 
+  // Production custom domain. wrangler provisions the DNS record + edge cert for
+  // this hostname (the alpacasoft.dev zone is on this account). /ingest, /v1,
+  // /public, and /admin/* are all served here.
+  "routes": [{ "pattern": "lists.alpacasoft.dev", "custom_domain": true }],
+
   // Query API config. ENTITLEMENT_PUBLIC_KEYS = the current alpacasoft signer
   // (keys.alpacasoft.dev/auth/public-key); rotation is add-new / flip / remove
   // (comma-separated). No secret here — the worker only verifies, never mints.
@@ -17,10 +22,8 @@
     "ADMIN_OWNERS": "key:List Admin Panel"
   },
 
-  // Normalized, queryable projection. `database_id` is a placeholder until
-  // `wrangler d1 create 40kdc_meta_db` is run (paste the returned id here);
-  // local dev + `migrations apply --local` use a name-keyed local SQLite and
-  // ignore it.
+  // Normalized, queryable projection (production D1 `40kdc_meta_db`). Local dev +
+  // `migrations apply --local` use a name-keyed local SQLite and ignore the id.
   "d1_databases": [
     {
       "binding": "DB",

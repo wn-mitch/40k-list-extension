@@ -19,25 +19,24 @@ a tick.
 - [x] **`ADMIN_OWNERS`** set to `key:List Admin Panel` (the minted key's owner
       sub). With it unset, `/admin/*` (queue, submission status, submitter block,
       **player consent**) refuses with `501`.
-- [ ] **`DEV_ALLOW_ALL` unset** (or not `"true"`). This bypass accepts *any*
+- [x] **`DEV_ALLOW_ALL` unset** (or not `"true"`). This bypass accepts *any*
       bearer as the owner and MUST NEVER be set in production.
-- [ ] **`ALLOW_REPROCESS` unset** (or not `"true"`). The guarded `/reprocess`
+- [x] **`ALLOW_REPROCESS` unset** (or not `"true"`). The guarded `/reprocess`
       endpoint must 404 in production.
 - [ ] **Rate caps reviewed** for production load: `MAX_QUERIES_PER_DAY` (per
       owner), `MAX_INGESTS_PER_DAY` (per submitter), `MAX_PUBLIC_QUERIES_PER_DAY`
       (per client IP, anonymous read tier).
-- [ ] **D1 `database_id`** replaced with the id returned by
-      `wrangler d1 create 40kdc_meta_db` (the committed value is the
-      `00000000-…` placeholder).
-- [ ] **Migrations applied to remote:** `npm run migrate:remote` against the
+- [x] **D1 `database_id`** set to the production database
+      `5e271f92-cd61-4cd7-ab9f-0b83878fe5e4` (from `wrangler d1 create 40kdc_meta_db`).
+- [x] **Migrations applied to remote:** `npm run migrate:remote` against the
       production D1.
 
 ### Extension (`packages/extension`)
 
-- [ ] **`host_permissions` narrowed** in `wxt.config.ts`: keep
+- [x] **`host_permissions` narrowed** in `wxt.config.ts`: keep
       `*://*.bestcoastpairings.com/*`, **remove `http://localhost/*`**, and add
       the deployed ingest origin so the background worker can POST to production.
-- [ ] **`WXT_INGEST_URL`** points at the production ingest endpoint, not
+- [x] **`WXT_INGEST_URL`** points at the production ingest endpoint, not
       `http://localhost:8787/ingest`.
 - [ ] **Verifiable build:** tag a commit `ext-v*` to run the public
       `extension-release` workflow; confirm the release zip carries SLSA build
@@ -46,7 +45,7 @@ a tick.
 
 ### Web (`packages/web`)
 
-- [ ] **`VITE_API_BASE`** points at the production worker origin, not
+- [x] **`VITE_API_BASE`** points at the production worker origin, not
       `http://localhost:8799` (empty string is fine when the SPA is served from
       the worker's own domain).
 - [ ] **Methodology page reachable:** `#/methodology` renders the consent
@@ -58,7 +57,7 @@ a tick.
 - [x] **`<owner>/40kdc-meta` placeholders replaced** with `wn-mitch/40k-list-extension` in
       `README.md`, `METHODOLOGY.md`, and the methodology web view (the published
       opt-in/opt-out contact path).
-- [ ] **`npm run typecheck` and `npm test` green** on the release commit.
+- [x] **`npm run typecheck` and `npm test` green** on the release commit.
 
 ## Non-code sign-offs (legal / privacy / store)
 
