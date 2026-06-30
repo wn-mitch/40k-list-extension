@@ -103,7 +103,7 @@ Store builds are produced by a public CI workflow that emits signed
 workflow + commit that produced it:
 
 ```bash
-gh attestation verify <downloaded-zip> --repo <owner>/40kdc-meta
+gh attestation verify <downloaded-zip> --repo wn-mitch/40k-list-extension
 ```
 
 See [`METHODOLOGY.md`](./METHODOLOGY.md) for exactly what is captured and how to

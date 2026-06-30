@@ -61,7 +61,7 @@ and under your control.
   remains as part of the aggregate meta data (it still counts in statistics) but
   can no longer be tied to you.
 - **How to request either.** Open an issue on the
-  [repository issue tracker](https://github.com/<owner>/40kdc-meta/issues). A
+  [repository issue tracker](https://github.com/wn-mitch/40k-list-extension/issues). A
   maintainer applies the change; it is durable and survives later captures and
   reprocessing. (Consent is not self-serve: player ids are public, so naming and
   exclusion are operator-mediated to prevent impersonation.)
@@ -82,7 +82,7 @@ commit, and the resulting zip carries signed
 produced by that workflow from this source:
 
 ```bash
-gh attestation verify <downloaded-zip> --repo <owner>/40kdc-meta
+gh attestation verify <downloaded-zip> --repo wn-mitch/40k-list-extension
 ```
 
 The full extension source — and the backend Worker it talks to — is public in

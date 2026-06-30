@@ -1,9 +1,9 @@
 <script lang="ts">
   // Static view — no API call. Content mirrors METHODOLOGY.md, with the
   // player-side consent contract surfaced for people whose lists are captured.
-  const issuesUrl = "https://github.com/<owner>/40kdc-meta/issues";
-  const methodologyUrl = "https://github.com/<owner>/40kdc-meta/blob/main/METHODOLOGY.md";
-  const repoUrl = "https://github.com/<owner>/40kdc-meta";
+  const issuesUrl = "https://github.com/wn-mitch/40k-list-extension/issues";
+  const methodologyUrl = "https://github.com/wn-mitch/40k-list-extension/blob/main/METHODOLOGY.md";
+  const repoUrl = "https://github.com/wn-mitch/40k-list-extension";
 </script>
 
 <section class="prose">

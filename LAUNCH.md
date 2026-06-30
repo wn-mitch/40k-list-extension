@@ -40,7 +40,7 @@ a tick.
       `http://localhost:8787/ingest`.
 - [ ] **Verifiable build:** tag a commit `ext-v*` to run the public
       `extension-release` workflow; confirm the release zip carries SLSA build
-      provenance and that `gh attestation verify <zip> --repo <owner>/40kdc-meta`
+      provenance and that `gh attestation verify <zip> --repo wn-mitch/40k-list-extension`
       passes against the downloaded asset.
 
 ### Web (`packages/web`)
@@ -54,9 +54,9 @@ a tick.
 
 ### Repo-wide
 
-- [ ] **`<owner>/40kdc-meta` placeholders replaced** with the real org/repo in
-      `README.md`, `METHODOLOGY.md`, the methodology web view, and the release
-      workflow notes — these are the published opt-in/opt-out contact path.
+- [x] **`<owner>/40kdc-meta` placeholders replaced** with `wn-mitch/40k-list-extension` in
+      `README.md`, `METHODOLOGY.md`, and the methodology web view (the published
+      opt-in/opt-out contact path).
 - [ ] **`npm run typecheck` and `npm test` green** on the release commit.
 
 ## Non-code sign-offs (legal / privacy / store)
