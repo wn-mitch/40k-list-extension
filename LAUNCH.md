@@ -12,12 +12,13 @@ a tick.
 
 ### Worker (`packages/worker/wrangler.jsonc`, deploy-time vars/secrets)
 
-- [ ] **`ENTITLEMENT_PUBLIC_KEYS`** set to the live signer key(s) — the current
-      `keys.alpacasoft.dev/auth/public-key`. The committed value is a dev
-      placeholder; rotation is add-new / flip / remove (comma-separated).
-- [ ] **`ADMIN_OWNERS`** set to the real moderator owner sub(s). With it unset,
-      `/admin/*` (queue, submission status, submitter block, **player consent**)
-      refuses with `501`, so consent ops cannot run until this is configured.
+- [x] **`ENTITLEMENT_PUBLIC_KEYS`** set to the live signer key(s). The committed
+      `hH3klVi_…` is the current `keys.alpacasoft.dev/auth/public-key` signer —
+      verified end-to-end (it validates a freshly-minted token). Rotation is
+      add-new / flip / remove (comma-separated).
+- [x] **`ADMIN_OWNERS`** set to `key:List Admin Panel` (the minted key's owner
+      sub). With it unset, `/admin/*` (queue, submission status, submitter block,
+      **player consent**) refuses with `501`.
 - [ ] **`DEV_ALLOW_ALL` unset** (or not `"true"`). This bypass accepts *any*
       bearer as the owner and MUST NEVER be set in production.
 - [ ] **`ALLOW_REPROCESS` unset** (or not `"true"`). The guarded `/reprocess`

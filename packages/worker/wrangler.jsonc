@@ -11,7 +11,10 @@
   "vars": {
     "ENTITLEMENT_PUBLIC_KEYS": "hH3klVi_OrYNSfbEToeSFKkNs04jQCZwFTEu0ugXKzY",
     "MAX_QUERIES_PER_DAY": "5000",
-    "MAX_INGESTS_PER_DAY": "500"
+    "MAX_INGESTS_PER_DAY": "500",
+    // Owner sub(s) allowed to moderate via /admin/* — the keys.alpacasoft.dev
+    // label(s) you minted, as `key:<label>` (comma-separated). Unset => 501.
+    "ADMIN_OWNERS": "key:List Admin Panel"
   },
 
   // Normalized, queryable projection. `database_id` is a placeholder until
