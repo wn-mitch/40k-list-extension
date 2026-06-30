@@ -32,7 +32,7 @@ function accepted(alias: string): string {
 
 // Consent-gated display: real name only for opted-in players, else a stable
 // pseudonym from the first 8 hex of the id hash (never the raw hash). Needs `p`.
-const PLAYER_NAME =
+export const PLAYER_NAME =
   "CASE WHEN p.consent = 'opted_in' THEN p.display_name ELSE 'player_' || substr(p.bcp_player_id_hash, 1, 8) END";
 
 function pageLimit(url: URL): number {

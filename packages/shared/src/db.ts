@@ -8,7 +8,9 @@
 /** Whether a player's identity may be shown publicly. */
 export type Consent = "opted_in" | "excluded" | "unknown";
 
-/** Lifecycle of a captured submission ("curing" gate before it goes public). */
+/** Lifecycle of a captured submission. Lists are `accepted` (public) on capture;
+ *  moderation is reactive — `quarantined`/`rejected` hides it, `pending` is unused
+ *  on ingest but kept for a possible future hold. */
 export type SubmissionStatus = "pending" | "accepted" | "quarantined" | "rejected";
 
 export interface SubmitterRow {

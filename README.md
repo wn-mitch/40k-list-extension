@@ -7,14 +7,14 @@ and a Cloudflare backend normalizes each list into [`@alpaca-software/40kdc-data
 entity IDs and stores it in a public, queryable form: find a list, "best in
 faction" this week, most-played units, faction representation, and so on.
 
-> **Status: full capture → publish pipeline working, with a browse UI and
-> consent ops.** The consent-based MV3 extension (Phase 1) captures BCP army
-> lists; the Worker stores raw in R2, normalizes each list into the D1
-> projection (Phase 3), an admin accepts it (Phase 4), and both the key-authed
-> `/v1` API (Phase 5) and an anonymous `/public` tier behind a Svelte browse UI
-> (Phase 6) serve the accepted, consent-gated data. Player consent is
-> operator-settable and documented (Phase 7). Remaining: the visual admin
-> moderation UI, plus the pre-launch checklist ([`LAUNCH.md`](./LAUNCH.md):
+> **Status: full capture → publish pipeline working, with a browse UI, reactive
+> moderation, and consent ops.** The consent-based MV3 extension (Phase 1)
+> captures BCP army lists; the Worker stores raw in R2, normalizes each list into
+> the D1 projection (Phase 3), and publishes it anonymized on capture. Both the
+> key-authed `/v1` API (Phase 5) and an anonymous `/public` tier behind a Svelte
+> browse UI (Phase 6) serve the public, consent-gated data; an admin moderation
+> UI (Phase 8) reactively quarantines/rejects abuse and runs consent ops
+> (Phase 7). Remaining: the pre-launch checklist ([`LAUNCH.md`](./LAUNCH.md):
 > production config + legal/privacy sign-off).
 
 ## Why this is trustworthy
@@ -34,8 +34,11 @@ product. So:
   is honored retroactively.
 
 Anti-abuse is built in: every submission is attributed to an anonymous,
-per-install id, lands in a `pending` state, and is only made public after
-*curing* (validity + parse + corroboration). Bad sources can be blocked.
+per-install id and is rate-limited per submitter per day (anti-flood). Lists are
+published anonymized on capture — moderation is **reactive**: an abusive or
+invalid submission is quarantined or rejected after the fact (removing it from
+the public data), and bad sources can be blocked. The per-submitter cap and the
+submitter blocklist are the pre-publish defenses.
 
 ## Layout
 
@@ -111,24 +114,24 @@ opt out.
 0. **Scaffold** ✓ — repo, schema, data-package integration.
 1. **Capture spike** ✓ — MV3 extension (consent gate + upload toast + activity
    log) capturing `newprod-api.bestcoastpairings.com/v1/*` into `/ingest`.
-2. **Ingestion + curing** ✓ — anonymous attributed submissions land `pending`,
-   raw + extracted text in R2, submitter blocklist, and a per-submitter daily
-   ingest rate limit (anti-flood). Curing (accept) is Phase 4.
+2. **Ingestion** ✓ — anonymous attributed submissions, raw + extracted text in
+   R2, submitter blocklist, and a per-submitter daily ingest rate limit
+   (anti-flood). Lists are published anonymized on capture.
 3. **Normalization + reconciliation** ✓ — captured army lists are normalized
    (`tryImportRoster`) and projected into D1 at ingest; lists dedup by
    content_hash with a corroboration trail, and `/reprocess` re-derives rows
    from raw when the parser improves.
-4. **Admin panel** ✓ *(backend)* — authed moderation endpoints (`/admin/queue`,
-   accept/reject/quarantine a submission, block a submitter); accepting is what
-   makes a list public. The visual panel is a Svelte SPA tracked with Phase 6.
+4. **Moderation backend** ✓ — authed endpoints (`/admin/queue`, set a
+   submission's status, block a submitter, submission detail). Moderation is
+   reactive: quarantine/reject hides a submission from the public tiers. The
+   visual panel ships in Phase 8.
 5. **Query API + stats** ✓ — key-authed `/v1` read API (entitlement tokens from
    keys.alpacasoft.dev) over accepted, consent-gated data: events, lists,
    best-in-faction, most-played units, faction rep; per-owner daily quota. See
    [`API.md`](./API.md).
 6. **Browse UI** ✓ *(browse)* — Svelte SPA (`packages/web/`) over a new anonymous,
    IP-rate-limited `/public` read tier: events, event detail, list browser with
-   filters, list detail (units), and faction/unit/best-in-faction stats. The
-   admin moderation UI is the remaining front-end piece.
+   filters, list detail (units), and faction/unit/best-in-faction stats.
 7. **Consent ops + launch gate** ✓ *(consent ops + docs)* — admin-settable
    player consent (`POST /admin/players/consent`: be-named / be-excluded, with
    exclusion as identity-suppression and durable across reprocessing), a static
@@ -136,6 +139,13 @@ opt out.
    [`METHODOLOGY.md`](./METHODOLOGY.md), and a [`LAUNCH.md`](./LAUNCH.md)
    pre-launch checklist. Deployment and legal/privacy review are the remaining
    (non-code) launch gates.
+8. **Default-accept + admin moderation UI** ✓ — captured lists are published
+   anonymized on ingest (no pre-publication review); moderation is reactive. A
+   Svelte admin panel in `packages/web/` — gated by a keys.alpacasoft.dev
+   entitlement token whose owner is in `ADMIN_OWNERS` — reviews the firehose,
+   inspects any submission (including the quarantined/rejected ones the public
+   API hides), quarantines/rejects or re-accepts, blocks submitters, and runs
+   consent ops.
 
 ## License
 

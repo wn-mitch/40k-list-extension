@@ -4,9 +4,11 @@ A read-only, key-authed API over the **accepted** competitive list/event data â€
 built so external tools and bots can query the dataset (and ease the transition
 off BCP). All responses are JSON.
 
-> Only **accepted** lists are exposed. Player names are **pseudonymized**
-> (`player_<8 hex>`) unless that player has explicitly opted in to being named.
-> The raw player-id hash is never returned.
+> Captured lists are **accepted (public) by default**; moderation is reactive (a
+> quarantined or rejected submission is hidden). Only **accepted** lists are
+> exposed here, names are **pseudonymized** (`player_<8 hex>`) unless that player
+> has explicitly opted in to being named, and the raw player-id hash is never
+> returned.
 
 ## Authentication
 
@@ -19,7 +21,7 @@ keys service â€” this worker holds no secret, only the pinned public key.
    curl -s https://keys.alpacasoft.dev/auth/key \
      -H 'content-type: application/json' \
      -d '{"key":"<your-access-key>"}'
-   # -> { "token": "<base64url(json)>.<base64url(sig)>", ... }
+   # -> { "entitlement": "<base64url(json)>.<base64url(sig)>" }
    ```
    The token is an Ed25519 envelope with claims `{ v:2, sub:"key:<label>", exp }`
    and is valid for **7 days**. Re-redeem when it expires.

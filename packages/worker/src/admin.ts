@@ -1,18 +1,20 @@
 /**
- * Phase 4 — admin moderation (the curing controls).
+ * Phase 4/8 — admin moderation (reactive).
  *
- * Submissions land `pending` and are invisible to the query API until an admin
- * accepts them; bad sources can be blocked. Admin identity reuses the same
- * entitlement tokens as the query API, restricted to an allowlist of owner subs
- * (ADMIN_OWNERS). Like the query API, an unconfigured server refuses (501)
- * rather than opening moderation to any keyholder.
+ * Lists are published anonymized on capture; moderation is reactive — a
+ * submission is quarantined or rejected after the fact, which hides it from the
+ * query API (and the public read tier). Bad sources can be blocked. Admin
+ * identity reuses the same entitlement tokens as the query API, restricted to an
+ * allowlist of owner subs (ADMIN_OWNERS). Like the query API, an unconfigured
+ * server refuses (501) rather than opening moderation to any keyholder.
  *
  * This is the moderation *backend*; the visual admin panel (a Svelte SPA over
- * these endpoints) is front-end work tracked with the browse UI.
+ * these endpoints) lives in `packages/web/`.
  */
 import { authenticate, type VerifyEntitlementEnv } from "./verify-entitlement";
 import { json } from "./http";
 import { sha256Hex } from "./hash";
+import { PLAYER_NAME } from "./query";
 
 export interface AdminEnv extends VerifyEntitlementEnv {
   DB: D1Database;
@@ -67,6 +69,10 @@ export async function handleAdmin(
   if (request.method === "GET" && path === "/admin/queue") {
     return adminQueue(env, url);
   }
+  const detailMatch = path.match(/^\/admin\/submissions\/([^/]+)$/);
+  if (request.method === "GET" && detailMatch) {
+    return adminSubmissionDetail(env, decodeURIComponent(detailMatch[1]));
+  }
   const statusMatch = path.match(/^\/admin\/submissions\/([^/]+)\/status$/);
   if (request.method === "POST" && statusMatch) {
     return setSubmissionStatus(request, env, decodeURIComponent(statusMatch[1]));
@@ -91,7 +97,8 @@ interface QueueRow {
 }
 
 async function adminQueue(env: AdminEnv, url: URL): Promise<Response> {
-  const status = url.searchParams.get("status") ?? "pending";
+  // Default to the firehose of freshly-accepted submissions (reactive moderation).
+  const status = url.searchParams.get("status") ?? "accepted";
   if (!isStatus(status)) {
     return json({ ok: false, error: "invalid status filter" }, 400);
   }
@@ -126,6 +133,132 @@ async function adminQueue(env: AdminEnv, url: URL): Promise<Response> {
   }));
   const nextKey = rows.results.length === limit && limit > 0 ? rows.results[rows.results.length - 1].id : null;
   return json({ ok: true, data, nextKey });
+}
+
+interface DetailListRow {
+  id: string;
+  faction_id: string | null;
+  detachment_ids: string;
+  battle_size: string | null;
+  points: number | null;
+  share_token: string | null;
+  import_format: string | null;
+  placing: number | null;
+  wins: number | null;
+  losses: number | null;
+  draws: number | null;
+  event_id: string | null;
+  player_name: string | null;
+  consent: string | null;
+}
+
+interface DetailUnitRow {
+  list_id: string;
+  unit_id: string | null;
+  raw_name: string;
+  model_count: number;
+  is_warlord: number;
+  enhancement_id: string | null;
+  resolved: number;
+}
+
+/**
+ * Full submission detail for the moderator. Unlike the public read tier this is
+ * NOT accepted-gated — quarantined/rejected submissions (hidden from /public and
+ * /v1) are inspectable here, which is the whole point of reactive moderation.
+ * Player identity stays consent-gated (pseudonym unless opted_in); the raw
+ * consent state is surfaced so the operator can act on it. Empty `lists` is a
+ * valid result (a submission whose projection failed or yielded no list).
+ */
+async function adminSubmissionDetail(env: AdminEnv, submissionId: string): Promise<Response> {
+  const submission = await env.DB.prepare(
+    "SELECT id, submitter_id, raw_r2_key, payload_hash, received_at, status FROM submissions WHERE id = ?",
+  )
+    .bind(submissionId)
+    .first<{
+      id: string;
+      submitter_id: string;
+      raw_r2_key: string;
+      payload_hash: string;
+      received_at: number;
+      status: string;
+    }>();
+  if (!submission) return json({ ok: false, error: "submission not found" }, 404);
+
+  const lists = await env.DB.prepare(
+    `SELECT l.id, l.faction_id, l.detachment_ids, l.battle_size, l.points, l.share_token, l.import_format,
+            l.placing, l.wins, l.losses, l.draws, e.bcp_event_id AS event_id,
+            ${PLAYER_NAME} AS player_name, p.consent AS consent
+     FROM list_sources ls
+     JOIN lists l ON l.id = ls.list_id
+     LEFT JOIN events e ON e.id = l.event_id
+     LEFT JOIN players p ON p.id = l.player_id
+     WHERE ls.submission_id = ?
+     ORDER BY l.id`,
+  )
+    .bind(submissionId)
+    .all<DetailListRow>();
+
+  // One round trip for every list's units (avoid an N+1 over list_sources).
+  const listIds = lists.results.map((l) => l.id);
+  const unitsByList = new Map<string, DetailUnitRow[]>();
+  if (listIds.length > 0) {
+    const placeholders = listIds.map(() => "?").join(",");
+    const units = await env.DB.prepare(
+      `SELECT list_id, unit_id, raw_name, model_count, is_warlord, enhancement_id, resolved
+       FROM list_units WHERE list_id IN (${placeholders}) ORDER BY list_id, id`,
+    )
+      .bind(...listIds)
+      .all<DetailUnitRow>();
+    for (const u of units.results) {
+      const arr = unitsByList.get(u.list_id);
+      if (arr) arr.push(u);
+      else unitsByList.set(u.list_id, [u]);
+    }
+  }
+
+  return json({
+    ok: true,
+    submission: {
+      submissionId: submission.id,
+      submitterId: submission.submitter_id,
+      rawKey: submission.raw_r2_key,
+      payloadHash: submission.payload_hash,
+      receivedAt: submission.received_at,
+      status: submission.status,
+    },
+    lists: lists.results.map((l) => {
+      // Tolerate a malformed detachment_ids column rather than failing the view.
+      let detachmentIds: string[] = [];
+      try {
+        const parsed = JSON.parse(l.detachment_ids);
+        if (Array.isArray(parsed)) detachmentIds = parsed as string[];
+      } catch {
+        // keep the empty array
+      }
+      return {
+        id: l.id,
+        eventId: l.event_id,
+        playerName: l.player_name,
+        consent: l.consent,
+        factionId: l.faction_id,
+        detachmentIds,
+        battleSize: l.battle_size,
+        points: l.points,
+        shareToken: l.share_token,
+        importFormat: l.import_format,
+        placement: { placing: l.placing, wins: l.wins, losses: l.losses, draws: l.draws },
+        units: (unitsByList.get(l.id) ?? []).map((u) => ({
+          unitId: u.unit_id,
+          rawName: u.raw_name,
+          modelCount: u.model_count,
+          isWarlord: u.is_warlord === 1,
+          enhancementId: u.enhancement_id,
+          resolved: u.resolved === 1,
+        })),
+      };
+    }),
+  });
 }
 
 async function setSubmissionStatus(

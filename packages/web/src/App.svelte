@@ -6,8 +6,25 @@
   import ListView from "./views/List.svelte";
   import Stats from "./views/Stats.svelte";
   import Methodology from "./views/Methodology.svelte";
+  import Queue from "./views/admin/Queue.svelte";
+  import Submission from "./views/admin/Submission.svelte";
+  import Consent from "./views/admin/Consent.svelte";
+  import TokenBar from "./views/admin/TokenBar.svelte";
+  import { adminAuth } from "./lib/admin.svelte";
 
-  type Match = { view: "events" | "event" | "lists" | "list" | "stats" | "methodology"; param?: string };
+  type Match = {
+    view:
+      | "events"
+      | "event"
+      | "lists"
+      | "list"
+      | "stats"
+      | "methodology"
+      | "admin-queue"
+      | "admin-submission"
+      | "admin-consent";
+    param?: string;
+  };
 
   function matchRoute(path: string): Match {
     const e = path.match(/^\/events\/(.+)$/);
@@ -17,6 +34,10 @@
     if (path === "/lists") return { view: "lists" };
     if (path === "/stats") return { view: "stats" };
     if (path === "/methodology") return { view: "methodology" };
+    const adminSub = path.match(/^\/admin\/submissions\/(.+)$/);
+    if (adminSub) return { view: "admin-submission", param: decodeURIComponent(adminSub[1]) };
+    if (path === "/admin/consent") return { view: "admin-consent" };
+    if (path === "/admin") return { view: "admin-queue" };
     return { view: "events" };
   }
 
@@ -40,6 +61,9 @@
       <a href="#/lists" class={navClass("/lists")}>Lists</a>
       <a href="#/stats" class={navClass("/stats")}>Stats</a>
       <a href="#/methodology" class={navClass("/methodology")}>Methodology</a>
+      {#if adminAuth.token}
+        <a href="#/admin" class={navClass("/admin")}>Admin</a>
+      {/if}
     </nav>
   </div>
 </header>
@@ -55,6 +79,15 @@
     <Stats />
   {:else if matched.view === "methodology"}
     <Methodology />
+  {:else if matched.view === "admin-queue"}
+    <TokenBar />
+    <Queue />
+  {:else if matched.view === "admin-submission"}
+    <TokenBar />
+    <Submission submissionId={matched.param ?? ""} />
+  {:else if matched.view === "admin-consent"}
+    <TokenBar />
+    <Consent />
   {:else}
     <Events />
   {/if}

@@ -2,10 +2,11 @@
  * Ingestion Worker.
  *
  * Accepts a {@link SubmissionEnvelope} from the extension, attributes it to a
- * (non-blocked) submitter, retains the raw payload verbatim in R2, records a
- * `pending` submission in D1, and projects the captured army lists into the
- * normalized D1 tables (see ./import). Raw is the source of truth; the D1
- * projection is rebuildable via /reprocess when the parser improves.
+ * (non-blocked) submitter, retains the raw payload verbatim in R2, records an
+ * `accepted` submission in D1, and projects the captured army lists into the
+ * normalized D1 tables (see ./import). Lists are public on capture; moderation
+ * is reactive (quarantine/reject hides a submission). Raw is the source of
+ * truth; the D1 projection is rebuildable via /reprocess when the parser improves.
  */
 import type { SubmissionEnvelope } from "@40kdc-meta/shared";
 import { projectSubmission, reprocessSubmission, type ProjectionSummary } from "./import";
@@ -112,10 +113,11 @@ async function handleIngest(request: Request, env: Env): Promise<Response> {
   const rawKey = `raw/${envelope.submitterId}/${envelope.capturedAt ?? now}-${payloadHash.slice(0, 12)}.json`;
   await env.RAW.put(rawKey, rawBody, { httpMetadata: { contentType: "application/json" } });
 
-  // Land as pending (curing happens later). Idempotent per (submitter, payload).
+  // Land as accepted; moderation is reactive — quarantine/reject removes it from
+  // the public read tier. Idempotent per (submitter, payload).
   const submissionId = crypto.randomUUID();
   const insert = await env.DB.prepare(
-    "INSERT OR IGNORE INTO submissions (id, submitter_id, raw_r2_key, payload_hash, received_at, status) VALUES (?, ?, ?, ?, ?, 'pending')",
+    "INSERT OR IGNORE INTO submissions (id, submitter_id, raw_r2_key, payload_hash, received_at, status) VALUES (?, ?, ?, ?, ?, 'accepted')",
   )
     .bind(submissionId, envelope.submitterId, rawKey, payloadHash, now)
     .run();
@@ -138,7 +140,7 @@ async function handleIngest(request: Request, env: Env): Promise<Response> {
       ok: true,
       submissionId: inserted ? submissionId : null,
       duplicate: !inserted,
-      status: "pending",
+      status: "accepted",
       rawKey,
       projected,
     },

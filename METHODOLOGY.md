@@ -40,16 +40,19 @@ and under your control.
 - **An anonymous, per-install `submitterId`** (a random UUID) is attached to each
   submission. It identifies the *source install*, not you. It contains no
   account, name, email, or device information.
-- Submissions land in a `pending` state and are only ever made public after
-  *curing* (validity + parse + corroboration) in later phases. Player display
-  names are pseudonymized by default. Being named is a separate, explicit opt-in,
-  and exclusion is an opt-out — both are described below.
+- Submissions are **published anonymized on capture** — there is no
+  pre-publication human review. Moderation is **reactive**: an abusive or
+  invalid submission is quarantined or rejected after the fact, which removes it
+  from the public data. Player display names are pseudonymized by default; being
+  named is a separate, explicit opt-in, and exclusion is an opt-out — both are
+  described below.
 
 ## For players whose lists are captured
 
 - **Lists are published anonymized.** A player is rendered as a
-  `player_<8 hex>` pseudonym derived from their BCP id, never a real name, and
-  only *accepted* lists are ever made public.
+  `player_<8 hex>` pseudonym derived from their BCP id, never a real name.
+  Captured lists are public by default; quarantined or rejected lists are never
+  public.
 - **Being named is an explicit opt-in.** If you want your list credited under
   your name, a maintainer records your chosen display name and it replaces the
   pseudonym.
