@@ -40,5 +40,14 @@
       "binding": "RAW",
       "bucket_name": "40kdc-meta-raw"
     }
-  ]
+  ],
+
+  // Serve the built Svelte SPA (packages/web) from the same origin. Asset-first:
+  // Cloudflare serves a matching static file (/, /assets/*) and falls through to
+  // the Worker for everything else (/ingest, /v1/*, /public/*, /admin/*). The SPA
+  // is hash-routed, so no single-page-application fallback is needed (which would
+  // otherwise shadow the API). Build with `npm run build:web` before deploy.
+  "assets": {
+    "directory": "../web/dist"
+  }
 }

@@ -48,7 +48,7 @@ a tick.
 - [x] **`VITE_API_BASE`** points at the production worker origin, not
       `http://localhost:8799` (empty string is fine when the SPA is served from
       the worker's own domain).
-- [ ] **Methodology page reachable:** `#/methodology` renders the consent
+- [x] **Methodology page reachable:** `#/methodology` renders the consent
       contract and the opt-in/opt-out contact path, and the opt-out link points
       at the real issue tracker / contact channel.
 
