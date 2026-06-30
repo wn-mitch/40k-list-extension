@@ -7,12 +7,15 @@ and a Cloudflare backend normalizes each list into [`@alpaca-software/40kdc-data
 entity IDs and stores it in a public, queryable form: find a list, "best in
 faction" this week, most-played units, faction representation, and so on.
 
-> **Status: full capture → publish pipeline working.** The consent-based MV3
-> extension (Phase 1) captures BCP army lists; the Worker stores raw in R2,
-> normalizes each list into the D1 projection (Phase 3), an admin accepts it
-> (Phase 4), and the key-authed `/v1` query API (Phase 5) serves the accepted,
-> consent-gated data. Remaining: the browse + admin UIs (Phase 6), ingest
-> hardening (Phase 2), and launch/consent ops (Phase 7).
+> **Status: full capture → publish pipeline working, with a browse UI and
+> consent ops.** The consent-based MV3 extension (Phase 1) captures BCP army
+> lists; the Worker stores raw in R2, normalizes each list into the D1
+> projection (Phase 3), an admin accepts it (Phase 4), and both the key-authed
+> `/v1` API (Phase 5) and an anonymous `/public` tier behind a Svelte browse UI
+> (Phase 6) serve the accepted, consent-gated data. Player consent is
+> operator-settable and documented (Phase 7). Remaining: the visual admin
+> moderation UI, plus the pre-launch checklist ([`LAUNCH.md`](./LAUNCH.md):
+> production config + legal/privacy sign-off).
 
 ## Why this is trustworthy
 
@@ -126,7 +129,13 @@ opt out.
    IP-rate-limited `/public` read tier: events, event detail, list browser with
    filters, list detail (units), and faction/unit/best-in-faction stats. The
    admin moderation UI is the remaining front-end piece.
-7. **Consent ops + launch gate** — opt-in/out flows, methodology page, legal review.
+7. **Consent ops + launch gate** ✓ *(consent ops + docs)* — admin-settable
+   player consent (`POST /admin/players/consent`: be-named / be-excluded, with
+   exclusion as identity-suppression and durable across reprocessing), a static
+   `/methodology` page in the browse UI, the player-consent section in
+   [`METHODOLOGY.md`](./METHODOLOGY.md), and a [`LAUNCH.md`](./LAUNCH.md)
+   pre-launch checklist. Deployment and legal/privacy review are the remaining
+   (non-code) launch gates.
 
 ## License
 
