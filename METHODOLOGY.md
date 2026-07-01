@@ -26,6 +26,11 @@ and under your control.
   move data *within* your browser; they cannot send anything anywhere.
 - **You can stop at any time.** Toggle consent OFF and buffering/sending stops
   immediately. "Clear log" empties the pending buffer and the activity log.
+- **Know what you are risking.** Capturing and sharing BCP data this way likely
+  conflicts with BCP's Terms of Use, and the account bearing that risk is
+  *yours*: BCP's stated remedy is suspending or terminating user accounts. Opt
+  in only if you accept that possibility. (This project's side is public and
+  auditable precisely so you can judge what you're participating in.)
 
 ## You always see when data leaves
 

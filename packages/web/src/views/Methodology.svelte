@@ -38,6 +38,12 @@
       <strong>You can stop at any time.</strong> Toggle consent OFF and buffering/sending
       stops immediately; "Clear log" empties the pending buffer and the activity log.
     </li>
+    <li>
+      <strong>Know what you are risking.</strong> Capturing and sharing BCP data this way
+      likely conflicts with BCP's Terms of Use, and the account bearing that risk is
+      <em>yours</em>: BCP's stated remedy is suspending or terminating user accounts. Opt in
+      only if you accept that possibility.
+    </li>
   </ul>
 
   <h2>You always see when data leaves</h2>
