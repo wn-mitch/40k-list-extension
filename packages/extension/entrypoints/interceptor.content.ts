@@ -8,14 +8,14 @@ import { CAPTURE_MSG, type PageCaptureMessage } from "../lib/types";
  *
  * It only *observes* responses and re-posts them in-page via `window.postMessage`
  * to the ISOLATED bridge. It has no `browser.*`/`storage` access and NEVER makes
- * an off-device request — the background service worker is the sole consent gate.
+ * an off-device request; the background service worker is the sole consent gate.
  */
 export default defineContentScript({
   matches: ["*://*.bestcoastpairings.com/*"],
   runAt: "document_start",
   world: "MAIN",
   main() {
-    // Captured bodies above this are dropped — list/event JSON is small; large
+    // Captured bodies above this are dropped: list/event JSON is small; large
     // payloads are not what we want and would bloat the channel.
     const MAX_BODY_BYTES = 2 * 1024 * 1024;
 
@@ -66,7 +66,7 @@ export default defineContentScript({
         const contentType = res.headers.get("content-type");
         if (shouldCapture(url, contentType)) {
           // Clone synchronously before any page consumer reads the body, then
-          // read the clone asynchronously — the real response is untouched.
+          // read the clone asynchronously; the real response is untouched.
           const clone = res.clone();
           void clone
             .text()

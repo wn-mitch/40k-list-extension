@@ -65,9 +65,9 @@ const renderLog = (entries: ActivityEntry[]): void => {
     if (entry.error) {
       summary = `Failed to send ${entry.count} (${entry.error})`;
     } else if (entry.duplicate) {
-      summary = `${entry.count} capture(s) — already uploaded`;
+      summary = `${entry.count} capture(s), already uploaded`;
     } else {
-      summary = `Uploaded ${entry.count} capture(s) — HTTP ${entry.status}`;
+      summary = `Uploaded ${entry.count} capture(s) (HTTP ${entry.status})`;
     }
 
     const line = document.createElement("div");

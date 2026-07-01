@@ -37,8 +37,8 @@
 {:else if event}
   <h1>{event.name ?? event.eventId}</h1>
   <p class="sub">
-    {#if event.date}{new Date(event.date).toLocaleDateString()} · {/if}{event.format ?? "—"} ·
-    {event.region ?? "—"}
+    {#if event.date}{new Date(event.date).toLocaleDateString()} · {/if}{event.format ?? "–"} ·
+    {event.region ?? "–"}
   </p>
   <table>
     <thead>
@@ -47,10 +47,15 @@
     <tbody>
       {#each lists as l (l.id)}
         <tr style="cursor:pointer" onclick={() => (window.location.hash = `#/lists/${l.id}`)}>
-          <td>{l.placement.placing ?? "—"}</td>
+          <td>{l.placement.placing ?? "–"}</td>
           <td><a href={`#/lists/${l.id}`}>{titleize(l.factionId)}</a></td>
-          <td>{l.playerName ?? "—"}</td>
-          <td class="num">{l.points ?? "—"}</td>
+          <td>{l.playerName ?? "–"}</td>
+          <td class="num">
+            {l.points ?? "–"}{#if l.warningCount}<span
+                class="warnmark"
+                title={`${l.warningCount} parse warning(s); see the list page`}>*</span
+              >{/if}
+          </td>
           <td class="num">{l.placement.wins ?? 0}-{l.placement.losses ?? 0}-{l.placement.draws ?? 0}</td>
         </tr>
       {/each}

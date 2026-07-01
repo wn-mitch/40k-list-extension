@@ -1,5 +1,5 @@
 <script lang="ts">
-  // Static view — no API call. Content mirrors METHODOLOGY.md, with the
+  // Static view; no API call. Content mirrors METHODOLOGY.md, with the
   // player-side consent contract surfaced for people whose lists are captured.
   const issuesUrl = "https://github.com/wn-mitch/40k-list-extension/issues";
   const methodologyUrl = "https://github.com/wn-mitch/40k-list-extension/blob/main/METHODOLOGY.md";
@@ -20,7 +20,7 @@
     <li>
       <strong>BCP domains only.</strong> The extension is scoped to
       <span class="mono">*.bestcoastpairings.com</span>. It does not run on, observe, or
-      capture any other website, and it reads only JSON network responses — not page content.
+      capture any other website, and it reads only JSON network responses, not page content.
     </li>
     <li>
       <strong>Not auth or static noise.</strong> Auth endpoints and static assets are
@@ -31,8 +31,8 @@
   <h2>Nothing leaves your browser until you opt in</h2>
   <ul>
     <li>
-      <strong>Consent is OFF by default.</strong> Captured responses are dropped — never
-      buffered, never queued — until you flip the consent toggle ON in the extension popup.
+      <strong>Consent is OFF by default.</strong> Captured responses are dropped (never
+      buffered, never queued) until you flip the consent toggle ON in the extension popup.
     </li>
     <li>
       <strong>You can stop at any time.</strong> Toggle consent OFF and buffering/sending
@@ -49,7 +49,7 @@
   <h2>What identifies a submission</h2>
   <p>
     Submissions carry only an <strong>anonymous, per-install <span class="mono">submitterId</span></strong>
-    (a random UUID). It identifies the <em>source install</em>, not you — no account, name,
+    (a random UUID). It identifies the <em>source install</em>, not you: no account, name,
     email, or device information.
   </p>
 
@@ -74,15 +74,40 @@
     </li>
   </ul>
   <p>
-    Both requests are made out-of-band — open an issue on the
-    <a href={issuesUrl} target="_blank" rel="noopener">repository issue tracker</a> — and
+    Both requests are made out-of-band (open an issue on the
+    <a href={issuesUrl} target="_blank" rel="noopener">repository issue tracker</a>) and
     are applied durably, surviving later captures and reprocessing.
   </p>
+
+  <h2>What this data is, and isn't</h2>
+  <ul>
+    <li>
+      <strong>An archive of as-pasted lists, not a validator.</strong> Lists are stored and
+      shown exactly as players pasted them into BCP. Nothing here checks legality:
+      detachment rules, enhancement limits, and points caps are not enforced.
+    </li>
+    <li>
+      <strong>Points totals are reported, not recomputed as truth.</strong> The headline
+      total is the one the player pasted. When the parser's own sum disagrees, both figures
+      are shown side by side with a "points mismatch" flag; they are never silently
+      reconciled.
+    </li>
+    <li>
+      <strong>Parse uncertainty is visible.</strong> Units the parser could not match to a
+      known datasheet are marked <em>unresolved</em>, and each list page shows the parser's
+      warnings. "Resolved" means a name matched a 40kdc entity, nothing more.
+    </li>
+    <li>
+      <strong>Every list is stamped with a parser version.</strong> When the parser
+      improves, retained raw captures are re-derived, so fidelity is tracked over time
+      rather than assumed.
+    </li>
+  </ul>
 
   <h2>More</h2>
   <p>
     Read the full <a href={methodologyUrl} target="_blank" rel="noopener">METHODOLOGY.md</a>
-    or browse the complete <a href={repoUrl} target="_blank" rel="noopener">source</a> —
+    or browse the complete <a href={repoUrl} target="_blank" rel="noopener">source</a>;
     the extension and the backend Worker are both public.
   </p>
 </section>

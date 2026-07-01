@@ -7,6 +7,8 @@
   --muted: #8b97a6;
   --accent: #c0573a; /* 40kdc ecosystem rust */
   --accent-ink: #f4d7cd;
+  --warn: #b98a2e; /* parse warnings: amber, warmed toward the rust */
+  --warn-ink: #ecd9a8;
   color-scheme: dark;
 }
 
@@ -161,6 +163,16 @@ td.num {
 .pill-warlord {
   color: var(--accent-ink);
   border-color: var(--accent);
+}
+.tag.warn {
+  color: var(--warn-ink);
+  border-color: var(--warn);
+}
+/* Footnote star on rows whose list carries parse warnings. */
+.warnmark {
+  color: var(--warn-ink);
+  margin-left: 2px;
+  cursor: help;
 }
 
 .bar {

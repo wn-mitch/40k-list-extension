@@ -1,7 +1,7 @@
 import { defineConfig } from "wxt";
 
 // Chromium MV3 only (Chrome/Edge/Brave). `world: "MAIN"` content scripts are
-// Chromium-only, which is fine for v1 — Firefox is a later phase.
+// Chromium-only, which is fine for v1; Firefox is a later phase.
 export default defineConfig({
   // Manifest depends on build mode: the store build (`wxt build|zip`, production)
   // drops the localhost host permission and adds the deployed ingest origin; dev

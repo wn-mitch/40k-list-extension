@@ -13,14 +13,14 @@ and under your control.
   same bytes BCP already sent to your browser.
 - **BCP domains only.** The extension is scoped to `*.bestcoastpairings.com`. It
   does not run on, observe, or capture any other website, and it does not read
-  page content at large — only network responses, and only JSON ones.
+  page content at large: only network responses, and only JSON ones.
 - **Not auth or static noise.** Auth endpoints and static assets
   (`.js`, `.css`, images, fonts) are filtered out before anything is buffered.
 
 ## Nothing leaves your browser until you opt in
 
-- **Consent is OFF by default.** Captured responses are dropped — never buffered,
-  never queued — until you flip the consent toggle ON in the extension popup.
+- **Consent is OFF by default.** Captured responses are dropped (never buffered,
+  never queued) until you flip the consent toggle ON in the extension popup.
 - **One choke point.** Only the background service worker ever makes an
   off-device request, and only when consent is ON. The in-page scripts can only
   move data *within* your browser; they cannot send anything anywhere.
@@ -40,11 +40,11 @@ and under your control.
 - **An anonymous, per-install `submitterId`** (a random UUID) is attached to each
   submission. It identifies the *source install*, not you. It contains no
   account, name, email, or device information.
-- Submissions are **published anonymized on capture** — there is no
+- Submissions are **published anonymized on capture**; there is no
   pre-publication human review. Moderation is **reactive**: an abusive or
   invalid submission is quarantined or rejected after the fact, which removes it
   from the public data. Player display names are pseudonymized by default; being
-  named is a separate, explicit opt-in, and exclusion is an opt-out — both are
+  named is a separate, explicit opt-in, and exclusion is an opt-out; both are
   described below.
 
 ## For players whose lists are captured
@@ -66,6 +66,22 @@ and under your control.
   reprocessing. (Consent is not self-serve: player ids are public, so naming and
   exclusion are operator-mediated to prevent impersonation.)
 
+## What this data is, and isn't
+
+- **An archive of as-pasted lists, not a validator.** Lists are stored and shown
+  exactly as players pasted them into BCP. Nothing here checks legality:
+  detachment rules, enhancement limits, and points caps are not enforced.
+- **Points totals are reported, not recomputed as truth.** The headline total is
+  the one the player pasted. When the parser's own sum disagrees, both figures
+  are surfaced side by side with a `points-mismatch` warning; they are never
+  silently reconciled.
+- **Parse uncertainty is visible.** Units the parser could not match to a known
+  datasheet are marked *unresolved*, and each list carries the parser's warnings
+  verbatim. "Resolved" means a name matched a 40kdc entity, nothing more.
+- **Every list is stamped with a parser version.** When the parser improves,
+  retained raw captures are re-derived, so fidelity is tracked over time rather
+  than assumed.
+
 ## How to opt out
 
 - **Turn it off:** flip the consent toggle OFF in the popup. Nothing more is sent.
@@ -85,5 +101,5 @@ produced by that workflow from this source:
 gh attestation verify <downloaded-zip> --repo wn-mitch/40k-list-extension
 ```
 
-The full extension source — and the backend Worker it talks to — is public in
+The full extension source (and the backend Worker it talks to) is public in
 this repository.

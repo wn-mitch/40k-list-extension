@@ -5,7 +5,7 @@ import { STORAGE_KEYS } from "../lib/storage-keys";
 import type { ActivityEntry, RuntimeMessage, ToastMessage } from "../lib/types";
 
 /**
- * Background service worker — the SINGLE consent gate.
+ * Background service worker: the SINGLE consent gate.
  *
  * The MAIN-world interceptor and the ISOLATED bridge only move data within the
  * page. Only this worker ever makes an off-device request, and only when the

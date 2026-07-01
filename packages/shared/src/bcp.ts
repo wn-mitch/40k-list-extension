@@ -3,7 +3,7 @@
  *
  * {@link SubmissionEnvelope} (what the extension POSTs to ingestion) is the firm
  * contract. The BCP *response* shapes below were pinned from a live,
- * authenticated BCP session during the Phase 1b capture spike — the API lives at
+ * authenticated BCP session during the Phase 1b capture spike; the API lives at
  * `newprod-api.bestcoastpairings.com/v1/*`. Only the fields this project uses are
  * typed; unmodelled fields are tolerated via index signatures and retained
  * verbatim in `raw`, so BCP adding fields never breaks ingestion.
@@ -60,12 +60,12 @@ export interface BcpListEvent {
 }
 
 /**
- * `GET /v1/armylists/:armyListId` — the army list a player submitted. The
+ * `GET /v1/armylists/:armyListId`: the army list a player submitted. The
  * primary object the normalizer consumes: `armyListText` is the pasted list.
  */
 export interface BcpArmyListResponse {
   id: string;
-  /** The army-list text the player pasted — the thing we normalize. */
+  /** The army-list text the player pasted: the thing we normalize. */
   armyListText: string;
   armyListHTML?: string | null;
   listType?: string | null; // e.g. "text"
@@ -174,7 +174,7 @@ export interface CapturedResponse {
  * as the source of truth for reprocessing.
  */
 export interface SubmissionEnvelope {
-  /** Stable, anonymous per-install id — identifies the source, not the person. */
+  /** Stable, anonymous per-install id; identifies the source, not the person. */
   submitterId: string;
   /** Client-side capture time, ms epoch. */
   capturedAt: number;

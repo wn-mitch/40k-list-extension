@@ -1,4 +1,4 @@
--- 0002_api_usage.sql — per-owner daily quota for the /v1 query API.
+-- 0002_api_usage.sql: per-owner daily quota for the /v1 query API.
 --
 -- A cheap cost lever: every authenticated query bumps (owner, UTC-day) and is
 -- rejected with 429 once it exceeds MAX_QUERIES_PER_DAY. Doubles as usage

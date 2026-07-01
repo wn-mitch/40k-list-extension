@@ -9,7 +9,12 @@
  * truth; the D1 projection is rebuildable via /reprocess when the parser improves.
  */
 import type { SubmissionEnvelope } from "@40kdc-meta/shared";
-import { projectSubmission, reprocessSubmission, type ProjectionSummary } from "./import";
+import {
+  projectSubmission,
+  reprocessSubmission,
+  setProjectionError,
+  type ProjectionSummary,
+} from "./import";
 import { sha256Hex } from "./hash";
 import { handleQuery, handlePublicQuery } from "./query";
 import { handleAdmin } from "./admin";
@@ -66,7 +71,10 @@ export default {
       }
       return new Response("Not found", { status: 404 });
     } catch (err) {
-      return json({ ok: false, error: String(err) }, 500);
+      // Log the real error for operators; clients get a generic message so
+      // platform/internal details never leak into a public response.
+      console.error("unhandled error", url.pathname, err);
+      return json({ ok: false, error: "internal error" }, 500);
     }
   },
 } satisfies ExportedHandler<Env>;
@@ -107,13 +115,13 @@ async function handleIngest(request: Request, env: Env): Promise<Response> {
       .run();
   }
 
-  // Retain the raw payload verbatim — this is what reprocessing reads forever.
+  // Retain the raw payload verbatim; this is what reprocessing reads forever.
   const rawBody = JSON.stringify(envelope.raw ?? envelope);
   const payloadHash = await sha256Hex(rawBody);
   const rawKey = `raw/${envelope.submitterId}/${envelope.capturedAt ?? now}-${payloadHash.slice(0, 12)}.json`;
   await env.RAW.put(rawKey, rawBody, { httpMetadata: { contentType: "application/json" } });
 
-  // Land as accepted; moderation is reactive — quarantine/reject removes it from
+  // Land as accepted; moderation is reactive, and quarantine/reject removes it from
   // the public read tier. Idempotent per (submitter, payload).
   const submissionId = crypto.randomUUID();
   const insert = await env.DB.prepare(
@@ -125,13 +133,15 @@ async function handleIngest(request: Request, env: Env): Promise<Response> {
   const inserted = insert.meta.changes > 0;
 
   // Normalize + project into D1 on first insert. Raw is already safe in R2, so a
-  // projection failure never fails ingestion — it can be re-run via /reprocess.
+  // projection failure never fails ingestion; it can be re-run via /reprocess.
+  // The failure is recorded on the submission row so moderation can see it.
   let projected: ProjectionSummary | null = null;
   if (inserted) {
     try {
       projected = await projectSubmission(env, envelope, { submissionId, capturedAt: now });
     } catch (err) {
-      console.error("projection failed", err);
+      console.error("projection failed", submissionId, err);
+      await setProjectionError(env, submissionId, err);
     }
   }
 
@@ -154,6 +164,12 @@ async function handleReprocess(request: Request, env: Env): Promise<Response> {
   if (!body || typeof body.submissionId !== "string") {
     return json({ ok: false, error: "submissionId required" }, 400);
   }
-  const summary = await reprocessSubmission(env, body.submissionId);
-  return json({ ok: true, ...summary });
+  try {
+    const summary = await reprocessSubmission(env, body.submissionId);
+    return json({ ok: true, ...summary });
+  } catch (err) {
+    console.error("reprocess failed", body.submissionId, err);
+    await setProjectionError(env, body.submissionId, err);
+    return json({ ok: false, error: "reprocess failed" }, 500);
+  }
 }

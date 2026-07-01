@@ -1,7 +1,7 @@
 # Launch checklist
 
 A pre-launch gate for going from local/dev to a public deployment. This is a
-**manual checklist** — nothing here is enforced at runtime. Work through both
+**manual checklist**; nothing here is enforced at runtime. Work through both
 groups before the first store submission and the first production deploy of the
 worker and web app.
 
@@ -13,7 +13,7 @@ a tick.
 ### Worker (`packages/worker/wrangler.jsonc`, deploy-time vars/secrets)
 
 - [x] **`ENTITLEMENT_PUBLIC_KEYS`** set to the live signer key(s). The committed
-      `hH3klVi_…` is the current `keys.alpacasoft.dev/auth/public-key` signer —
+      `hH3klVi_…` is the current `keys.alpacasoft.dev/auth/public-key` signer,
       verified end-to-end (it validates a freshly-minted token). Rotation is
       add-new / flip / remove (comma-separated).
 - [x] **`ADMIN_OWNERS`** set to `key:List Admin Panel` (the minted key's owner

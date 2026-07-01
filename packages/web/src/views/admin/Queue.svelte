@@ -64,7 +64,12 @@
             <td class="mono">{new Date(r.receivedAt).toISOString().slice(0, 16).replace("T", " ")}</td>
             <td class="mono" title={r.submitterId}>{r.submitterId.slice(0, 12)}…</td>
             <td class="num">{r.listCount}</td>
-            <td><span class="tag">{r.status}</span></td>
+            <td>
+              <span class="tag">{r.status}</span>
+              {#if r.projectionError}
+                <span class="tag warn" title={r.projectionError}>projection failed</span>
+              {/if}
+            </td>
             <td><a href={`#/admin/submissions/${r.submissionId}`}>Review →</a></td>
           </tr>
         {/each}

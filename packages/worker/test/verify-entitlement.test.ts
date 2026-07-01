@@ -35,7 +35,7 @@ describe("authenticate", () => {
     expect(result).toEqual({ ok: false, status: 401 });
   });
 
-  it("refuses (501) when no public key is pinned — never opens", async () => {
+  it("refuses (501) when no public key is pinned; never opens", async () => {
     const token = await mintToken({ v: 2, sub: "key:test", exp: Date.now() + 60_000 });
     const result = await authenticate(req(`Bearer ${token}`), {});
     expect(result).toEqual({ ok: false, status: 501 });

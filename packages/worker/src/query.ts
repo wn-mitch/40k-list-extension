@@ -1,5 +1,5 @@
 /**
- * Phase 5 — key-authed read API (`/v1/*`) over the accepted list/event data.
+ * Phase 5: key-authed read API (`/v1/*`) over the accepted list/event data.
  *
  * Every route is authenticated (bearer entitlement token from
  * keys.alpacasoft.dev, or DEV_ALLOW_ALL in dev), rate-limited per owner per UTC
@@ -166,14 +166,14 @@ async function getEvent(env: QueryEnv, bcpEventId: string): Promise<Response> {
   if (!event) return json({ ok: false, error: "event not found" }, 404);
 
   const lists = await env.DB.prepare(
-    `SELECT l.id, l.faction_id, l.points, l.placing, l.wins, l.losses, l.draws, ${PLAYER_NAME} AS player_name
+    `SELECT l.id, l.faction_id, l.points, l.warnings, l.placing, l.wins, l.losses, l.draws, ${PLAYER_NAME} AS player_name
      FROM lists l
      LEFT JOIN players p ON p.id = l.player_id
      WHERE l.event_id = ? AND ${accepted("l")}
      ORDER BY (l.placing IS NULL), l.placing, l.id`,
   )
     .bind(event.id)
-    .all<{ id: string; faction_id: string | null; points: number | null; placing: number | null; wins: number | null; losses: number | null; draws: number | null; player_name: string | null }>();
+    .all<{ id: string; faction_id: string | null; points: number | null; warnings: string | null; placing: number | null; wins: number | null; losses: number | null; draws: number | null; player_name: string | null }>();
 
   return json({
     ok: true,
@@ -184,13 +184,17 @@ async function getEvent(env: QueryEnv, bcpEventId: string): Promise<Response> {
       format: event.format,
       region: event.region,
     },
-    lists: lists.results.map((l) => ({
-      id: l.id,
-      factionId: l.faction_id,
-      playerName: l.player_name,
-      points: l.points,
-      placement: { placing: l.placing, wins: l.wins, losses: l.losses, draws: l.draws },
-    })),
+    lists: lists.results.map((l) => {
+      const warnings = parseWarnings(l.warnings, l.id);
+      return {
+        id: l.id,
+        factionId: l.faction_id,
+        playerName: l.player_name,
+        points: l.points,
+        warningCount: warnings == null ? null : warnings.length,
+        placement: { placing: l.placing, wins: l.wins, losses: l.losses, draws: l.draws },
+      };
+    }),
   });
 }
 
@@ -202,6 +206,10 @@ interface ListRow {
   detachment_ids: string;
   battle_size: string | null;
   points: number | null;
+  points_reported: number | null;
+  points_computed: number | null;
+  declared_limit: number | null;
+  warnings: string | null;
   share_token: string | null;
   import_format: string | null;
   placing: number | null;
@@ -210,6 +218,30 @@ interface ListRow {
   draws: number | null;
   event_id: string | null;
   player_name: string | null;
+}
+
+/** One importer diagnostic, as persisted on the list row. */
+interface ListWarning {
+  code: string;
+  message: string;
+  raw_name: string | null;
+}
+
+/**
+ * Parse a persisted `warnings` JSON column. Pre-p1 rows hold NULL (unknown, not
+ * clean) and map to null; a malformed column is logged and treated the same so
+ * one bad row can't fail a whole query.
+ */
+function parseWarnings(raw: string | null, listId: string): ListWarning[] | null {
+  if (raw == null) return null;
+  try {
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) return parsed as ListWarning[];
+  } catch {
+    // fall through to the log below
+  }
+  console.warn("malformed warnings column on list", listId);
+  return null;
 }
 
 async function listLists(env: QueryEnv, url: URL): Promise<Response> {
@@ -249,7 +281,8 @@ async function listLists(env: QueryEnv, url: URL): Promise<Response> {
 
   const limit = pageLimit(url);
   const rows = await env.DB.prepare(
-    `SELECT l.id, l.faction_id, l.detachment_ids, l.battle_size, l.points, l.share_token, l.import_format,
+    `SELECT l.id, l.faction_id, l.detachment_ids, l.battle_size, l.points, l.points_reported,
+            l.points_computed, l.declared_limit, l.warnings, l.share_token, l.import_format,
             l.placing, l.wins, l.losses, l.draws, e.bcp_event_id AS event_id, ${PLAYER_NAME} AS player_name
      FROM lists l
      LEFT JOIN events e ON e.id = l.event_id
@@ -267,7 +300,8 @@ async function listLists(env: QueryEnv, url: URL): Promise<Response> {
 
 async function getList(env: QueryEnv, id: string): Promise<Response> {
   const row = await env.DB.prepare(
-    `SELECT l.id, l.faction_id, l.detachment_ids, l.battle_size, l.points, l.share_token, l.import_format,
+    `SELECT l.id, l.faction_id, l.detachment_ids, l.battle_size, l.points, l.points_reported,
+            l.points_computed, l.declared_limit, l.warnings, l.share_token, l.import_format,
             l.placing, l.wins, l.losses, l.draws, e.bcp_event_id AS event_id, ${PLAYER_NAME} AS player_name
      FROM lists l
      LEFT JOIN events e ON e.id = l.event_id
@@ -288,6 +322,8 @@ async function getList(env: QueryEnv, id: string): Promise<Response> {
     ok: true,
     list: {
       ...listSummary(row),
+      // Detail carries the full diagnostics; summaries only carry the count.
+      warnings: parseWarnings(row.warnings, row.id),
       units: units.results.map((u) => ({
         unitId: u.unit_id,
         rawName: u.raw_name,
@@ -306,8 +342,11 @@ function listSummary(r: ListRow) {
     const parsed = JSON.parse(r.detachment_ids);
     if (Array.isArray(parsed)) detachmentIds = parsed as string[];
   } catch {
-    // tolerate a malformed JSON column rather than failing the whole query
+    // tolerate a malformed JSON column rather than failing the whole query,
+    // but leave a trace so the corruption is findable
+    console.warn("malformed detachment_ids column on list", r.id);
   }
+  const warnings = parseWarnings(r.warnings, r.id);
   return {
     id: r.id,
     eventId: r.event_id,
@@ -315,7 +354,15 @@ function listSummary(r: ListRow) {
     factionId: r.faction_id,
     detachmentIds,
     battleSize: r.battle_size,
+    // `points` is the headline (as-pasted when reported, else computed); the
+    // reported/computed pair makes its provenance explicit. None of these are a
+    // legality verdict: this API archives lists, it does not validate them.
     points: r.points,
+    pointsReported: r.points_reported,
+    pointsComputed: r.points_computed,
+    declaredLimit: r.declared_limit,
+    /** Importer warning count; null when unknown (row predates diagnostics). */
+    warningCount: warnings == null ? null : warnings.length,
     shareToken: r.share_token,
     importFormat: r.import_format,
     placement: { placing: r.placing, wins: r.wins, losses: r.losses, draws: r.draws },

@@ -1,7 +1,7 @@
 /**
- * Phase 4/8 — admin moderation (reactive).
+ * Phase 4/8: admin moderation (reactive).
  *
- * Lists are published anonymized on capture; moderation is reactive — a
+ * Lists are published anonymized on capture; moderation is reactive: a
  * submission is quarantined or rejected after the fact, which hides it from the
  * query API (and the public read tier). Bad sources can be blocked. Admin
  * identity reuses the same entitlement tokens as the query API, restricted to an
@@ -93,6 +93,7 @@ interface QueueRow {
   submitter_id: string;
   received_at: number;
   status: string;
+  projection_error: string | null;
   list_count: number;
 }
 
@@ -114,7 +115,7 @@ async function adminQueue(env: AdminEnv, url: URL): Promise<Response> {
   }
 
   const rows = await env.DB.prepare(
-    `SELECT s.id, s.submitter_id, s.received_at, s.status,
+    `SELECT s.id, s.submitter_id, s.received_at, s.status, s.projection_error,
             (SELECT count(*) FROM list_sources ls WHERE ls.submission_id = s.id) AS list_count
      FROM submissions s
      WHERE ${conditions.join(" AND ")}
@@ -129,6 +130,7 @@ async function adminQueue(env: AdminEnv, url: URL): Promise<Response> {
     submitterId: r.submitter_id,
     receivedAt: r.received_at,
     status: r.status,
+    projectionError: r.projection_error,
     listCount: r.list_count,
   }));
   const nextKey = rows.results.length === limit && limit > 0 ? rows.results[rows.results.length - 1].id : null;
@@ -164,7 +166,7 @@ interface DetailUnitRow {
 
 /**
  * Full submission detail for the moderator. Unlike the public read tier this is
- * NOT accepted-gated — quarantined/rejected submissions (hidden from /public and
+ * NOT accepted-gated: quarantined/rejected submissions (hidden from /public and
  * /v1) are inspectable here, which is the whole point of reactive moderation.
  * Player identity stays consent-gated (pseudonym unless opted_in); the raw
  * consent state is surfaced so the operator can act on it. Empty `lists` is a
@@ -172,7 +174,7 @@ interface DetailUnitRow {
  */
 async function adminSubmissionDetail(env: AdminEnv, submissionId: string): Promise<Response> {
   const submission = await env.DB.prepare(
-    "SELECT id, submitter_id, raw_r2_key, payload_hash, received_at, status FROM submissions WHERE id = ?",
+    "SELECT id, submitter_id, raw_r2_key, payload_hash, received_at, status, projection_error FROM submissions WHERE id = ?",
   )
     .bind(submissionId)
     .first<{
@@ -182,6 +184,7 @@ async function adminSubmissionDetail(env: AdminEnv, submissionId: string): Promi
       payload_hash: string;
       received_at: number;
       status: string;
+      projection_error: string | null;
     }>();
   if (!submission) return json({ ok: false, error: "submission not found" }, 404);
 
@@ -226,6 +229,7 @@ async function adminSubmissionDetail(env: AdminEnv, submissionId: string): Promi
       payloadHash: submission.payload_hash,
       receivedAt: submission.received_at,
       status: submission.status,
+      projectionError: submission.projection_error,
     },
     lists: lists.results.map((l) => {
       // Tolerate a malformed detachment_ids column rather than failing the view.
@@ -322,7 +326,7 @@ export function parsePlayerConsent(
     }
     return { bcpPlayerId, consent, displayName: displayName.trim() };
   }
-  // excluded / unknown — identity purge; any supplied name is ignored.
+  // excluded / unknown: identity purge; any supplied name is ignored.
   return { bcpPlayerId, consent: consent as PlayerConsent, displayName: null };
 }
 

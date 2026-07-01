@@ -1,5 +1,5 @@
 /**
- * Entitlement verification — tokens are minted only by keys.alpacasoft.dev
+ * Entitlement verification: tokens are minted only by keys.alpacasoft.dev
  * (Ed25519 envelopes `base64url(json).base64url(sig)`, claims {v:2, sub, exp});
  * this worker verifies against the raw public key(s) pinned in
  * ENTITLEMENT_PUBLIC_KEYS (comma-separated base64url; a list so rotation is
@@ -7,12 +7,12 @@
  *
  * A near-copy of shadowboxing's session-worker verifier, minus that worker's
  * legacy-HMAC transition path (this worker never minted HMAC tokens). Three
- * repos share this by duplication on purpose — extract a package only if it
+ * repos share this by duplication on purpose; extract a package only if it
  * becomes a maintenance burden. (40kdc-meta is the third consumer, after the
  * shadowboxing session-worker and 40kdc-sync.)
  *
  * Unlike the session gate (a pure cost lever, open when unconfigured), the
- * query routes need an OWNER identity from the token — so an unconfigured
+ * query routes need an OWNER identity from the token, so an unconfigured
  * worker refuses authenticated routes (501) instead of opening them.
  * DEV_ALLOW_ALL=true (dev/tests, NEVER production) accepts any bearer and
  * uses it as the owner, so local dev can simulate multiple users.
@@ -67,7 +67,7 @@ export async function verifyEd25519Token(
         break;
       }
     } catch {
-      // Malformed pinned key — try the next one.
+      // Malformed pinned key; try the next one.
     }
   }
   if (!verified) return null;

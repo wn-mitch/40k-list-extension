@@ -1,5 +1,5 @@
 /**
- * D1 row types — kept in lockstep with `migrations/0001_init.sql`.
+ * D1 row types, kept in lockstep with `migrations/0001_init.sql`.
  *
  * Integer booleans (`0 | 1`) mirror SQLite's lack of a boolean type. These rows
  * are a rebuildable projection of the raw text retained in R2.
@@ -9,7 +9,7 @@
 export type Consent = "opted_in" | "excluded" | "unknown";
 
 /** Lifecycle of a captured submission. Lists are `accepted` (public) on capture;
- *  moderation is reactive — `quarantined`/`rejected` hides it, `pending` is unused
+ *  moderation is reactive: `quarantined`/`rejected` hides it, `pending` is unused
  *  on ingest but kept for a possible future hold. */
 export type SubmissionStatus = "pending" | "accepted" | "quarantined" | "rejected";
 
@@ -28,6 +28,8 @@ export interface SubmissionRow {
   payload_hash: string;
   received_at: number;
   status: SubmissionStatus;
+  /** Why projection failed, when it did (truncated message); null = projected fine. */
+  projection_error: string | null;
 }
 
 export interface EventRow {
@@ -56,7 +58,16 @@ export interface ListRow {
   /** JSON-encoded array of 40kdc detachment entity ids. */
   detachment_ids: string;
   battle_size: string | null;
+  /** Headline total: as-pasted when reported, else computed. See the *_reported/_computed pair. */
   points: number | null;
+  /** Total exactly as the source cost block reported it; never reconciled. */
+  points_reported: number | null;
+  /** Total the importer summed from cost lines; never reconciled. */
+  points_computed: number | null;
+  /** Points limit parsed from the battle-size label, if any. */
+  declared_limit: number | null;
+  /** JSON-encoded array of importer warnings ({code, message, raw_name}); null on pre-p1 rows. */
+  warnings: string | null;
   share_token: string | null;
   content_hash: string;
   raw_text_r2_key: string;

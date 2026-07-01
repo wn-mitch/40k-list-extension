@@ -1,4 +1,4 @@
--- 0001_init.sql — 40kdc-meta initial schema (Phase 0).
+-- 0001_init.sql: 40kdc-meta initial schema (Phase 0).
 --
 -- The raw BCP payload + extracted list text in R2 are the source of truth.
 -- Everything below is a REBUILDABLE PROJECTION: when the parser improves, the
@@ -45,7 +45,7 @@ CREATE TABLE events (
 CREATE UNIQUE INDEX idx_events_bcp ON events (bcp_event_id);
 
 -- Consent is modelled as a JOIN target (a list references a player), never baked
--- into list rows — so the consent policy can change without reprocessing R2, and
+-- into list rows, so the consent policy can change without reprocessing R2, and
 -- opt-out is a purge of identity columns here.
 CREATE TABLE players (
   id                 TEXT PRIMARY KEY,

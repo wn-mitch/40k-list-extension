@@ -74,7 +74,17 @@
   <p class="sub">
     <span class="mono">{detail.submission.submissionId}</span> ·
     <span class="tag">{detail.submission.status}</span>
+    {#if detail.submission.projectionError}
+      <span class="tag warn">projection failed</span>
+    {/if}
   </p>
+
+  {#if detail.submission.projectionError}
+    <p class="state error">
+      Projection failed for this submission: <span class="mono">{detail.submission.projectionError}</span>.
+      The raw capture is safe in R2; rerun it via <span class="mono">/reprocess</span>.
+    </p>
+  {/if}
 
   <div class="recordbox">
     <div class="stat">
@@ -139,9 +149,9 @@
             {/if}
           </h2>
           <span class="meta">
-            {l.playerName ?? "—"} · consent <span class="tag">{l.consent ?? "unknown"}</span> ·
-            {l.points ?? "—"} pts · place {l.placement.placing ?? "—"} ·
-            <span class="mono">{l.importFormat ?? "—"}</span>
+            {l.playerName ?? "–"} · consent <span class="tag">{l.consent ?? "unknown"}</span> ·
+            {l.points ?? "–"} pts · place {l.placement.placing ?? "–"} ·
+            <span class="mono">{l.importFormat ?? "–"}</span>
           </span>
         </div>
         {#if l.units.length === 0}

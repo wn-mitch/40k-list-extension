@@ -54,10 +54,15 @@
       {#each lists as l (l.id)}
         <tr style="cursor:pointer" onclick={() => (window.location.hash = `#/lists/${l.id}`)}>
           <td><a href={`#/lists/${l.id}`}>{titleize(l.factionId)}</a></td>
-          <td>{l.playerName ?? "—"}</td>
-          <td class="mono">{l.eventId ?? "—"}</td>
-          <td class="num">{l.points ?? "—"}</td>
-          <td class="num">{l.placement.placing ?? "—"}</td>
+          <td>{l.playerName ?? "–"}</td>
+          <td class="mono">{l.eventId ?? "–"}</td>
+          <td class="num">
+            {l.points ?? "–"}{#if l.warningCount}<span
+                class="warnmark"
+                title={`${l.warningCount} parse warning(s); see the list page`}>*</span
+              >{/if}
+          </td>
+          <td class="num">{l.placement.placing ?? "–"}</td>
         </tr>
       {/each}
     </tbody>

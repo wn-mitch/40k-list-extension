@@ -12,12 +12,12 @@
 
   // Query API config. ENTITLEMENT_PUBLIC_KEYS = the current alpacasoft signer
   // (keys.alpacasoft.dev/auth/public-key); rotation is add-new / flip / remove
-  // (comma-separated). No secret here — the worker only verifies, never mints.
+  // (comma-separated). No secret here; the worker only verifies, never mints.
   "vars": {
     "ENTITLEMENT_PUBLIC_KEYS": "hH3klVi_OrYNSfbEToeSFKkNs04jQCZwFTEu0ugXKzY",
     "MAX_QUERIES_PER_DAY": "5000",
     "MAX_INGESTS_PER_DAY": "500",
-    // Owner sub(s) allowed to moderate via /admin/* — the keys.alpacasoft.dev
+    // Owner sub(s) allowed to moderate via /admin/*: the keys.alpacasoft.dev
     // label(s) you minted, as `key:<label>` (comma-separated). Unset => 501.
     "ADMIN_OWNERS": "key:List Admin Panel"
   },
@@ -33,7 +33,7 @@
     }
   ],
 
-  // Immutable raw captures (BCP JSON + extracted list text) — the source of
+  // Immutable raw captures (BCP JSON + extracted list text), the source of
   // truth for reprocessing.
   "r2_buckets": [
     {

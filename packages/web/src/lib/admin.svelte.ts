@@ -2,8 +2,8 @@
 //
 // Auth = an alpacasoft-keys entitlement token. The operator either pastes a
 // pre-redeemed token (`<b64url>.<b64url>`) or an access key, which the SPA
-// redeems in-browser at keys.alpacasoft.dev/auth/key (CORS is open). The token —
-// never the access key — is held in sessionStorage and sent as the bearer on
+// redeems in-browser at keys.alpacasoft.dev/auth/key (CORS is open). The token
+// (never the access key) is held in sessionStorage and sent as the bearer on
 // /admin calls. The only real gate is server-side `requireAdmin` (token owner ∈
 // ADMIN_OWNERS); hiding the nav is just UX.
 import { adminErrorMessage, looksLikeToken } from "./admin-auth";
@@ -25,6 +25,8 @@ export interface QueueEntry {
   submitterId: string;
   receivedAt: number;
   status: string;
+  /** Why projection failed for this submission; null when it projected fine. */
+  projectionError: string | null;
   listCount: number;
 }
 
@@ -41,6 +43,8 @@ export interface SubmissionMeta {
   payloadHash: string;
   receivedAt: number;
   status: string;
+  /** Why projection failed for this submission; null when it projected fine. */
+  projectionError: string | null;
 }
 
 export interface AdminList {
@@ -80,7 +84,7 @@ async function failure(res: Response): Promise<Error> {
       serverError = body.error;
     }
   } catch {
-    // non-JSON error body — fall back to the status-only message
+    // non-JSON error body; fall back to the status-only message
   }
   return new Error(adminErrorMessage(res.status, serverError));
 }
@@ -101,7 +105,7 @@ async function authed<T>(path: string, method = "GET", body?: unknown): Promise<
 }
 
 /** Redeem a raw access key for an entitlement token at the keys service. The raw
- *  key never touches our worker or storage — only the resulting token does. */
+ *  key never touches our worker or storage; only the resulting token does. */
 async function redeemKey(key: string): Promise<string> {
   let res: Response;
   try {

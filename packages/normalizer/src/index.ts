@@ -12,6 +12,7 @@ import {
   rosterToShareList,
   encodeShareToken,
   type Roster,
+  type Warning,
 } from "@alpaca-software/40kdc-data";
 import type { BcpListCapture } from "@40kdc-meta/shared";
 
@@ -20,7 +21,7 @@ import type { BcpListCapture } from "@40kdc-meta/shared";
  * list + coverage row so reprocessing can re-derive rows and track fidelity per
  * version.
  */
-export const PARSER_VERSION = "p0-2026.06.28";
+export const PARSER_VERSION = "p1-2026.07.01";
 
 export interface NormalizedUnit {
   unit_id: string | null;
@@ -39,10 +40,26 @@ export interface NormalizedList {
   faction_id: string | null;
   detachment_ids: string[];
   battle_size: string | null;
+  /**
+   * Headline total: the as-pasted figure when the source reported one, else the
+   * computed sum. Provenance is inspectable via {@link points_reported} and
+   * {@link points_computed}; a divergence also emits a `points-mismatch` warning.
+   */
   points: number | null;
+  /** Total exactly as the source's cost block reported it; never reconciled. */
+  points_reported: number | null;
+  /** Total summed from every cost line by the importer; never reconciled. */
+  points_computed: number | null;
+  /** Points limit parsed from the battle-size label (e.g. 2000), if any. */
+  declared_limit: number | null;
+  /**
+   * Importer diagnostics, verbatim: points-mismatch, unresolved names,
+   * detachment-points-exceeded, and friends. Empty when the import was clean.
+   */
+  warnings: Warning[];
   /** Compact registry-indexed token; null when the list isn't encodable. */
   share_token: string | null;
-  /** sha256 of the normalized list text — the dedup key. Always present. */
+  /** sha256 of the normalized list text: the dedup key. Always present. */
   content_hash: string;
   units: NormalizedUnit[];
   resolved_units: number;
@@ -65,6 +82,10 @@ export async function normalizeList(capture: BcpListCapture): Promise<Normalized
       detachment_ids: [],
       battle_size: null,
       points: null,
+      points_reported: null,
+      points_computed: null,
+      declared_limit: null,
+      warnings: [],
       share_token: null,
       content_hash,
       units: [],
@@ -103,6 +124,10 @@ export async function normalizeList(capture: BcpListCapture): Promise<Normalized
     detachment_ids: roster.detachments.map((d) => d.ref.id).filter((id): id is string => id != null),
     battle_size: roster.battle_size,
     points: roster.points.total_reported ?? roster.points.total_computed ?? null,
+    points_reported: roster.points.total_reported,
+    points_computed: roster.points.total_computed,
+    declared_limit: roster.points.declared_limit,
+    warnings: roster.diagnostics.warnings,
     share_token,
     content_hash,
     units,
@@ -118,7 +143,7 @@ function normalizeText(text: string): string {
   return text.replace(/\r\n/g, "\n").trim().replace(/[ \t]+\n/g, "\n");
 }
 
-/** SHA-256 hex via Web Crypto — available in both Workers and Node 18+. */
+/** SHA-256 hex via Web Crypto, available in both Workers and Node 18+. */
 async function sha256Hex(input: string): Promise<string> {
   const bytes = new TextEncoder().encode(input);
   const digest = await crypto.subtle.digest("SHA-256", bytes);

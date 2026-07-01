@@ -1,7 +1,7 @@
 /** Shared HTTP helpers for the worker (ingestion + query share these). */
 
 // CORS: the MV3 background fetch is privileged and usually skips CORS, but the
-// same endpoints serve the browser web/admin + external bots — keep responses
+// same endpoints serve the browser web/admin + external bots; keep responses
 // CORS-safe. `authorization` is allowed so browser clients can send bearer tokens.
 export const CORS_HEADERS: Record<string, string> = {
   "access-control-allow-origin": "*",

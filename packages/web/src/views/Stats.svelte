@@ -84,9 +84,9 @@
       {#each bif as b (b.factionId)}
         <tr style="cursor:pointer" onclick={() => (window.location.hash = `#/lists/${b.listId}`)}>
           <td><a href={`#/lists/${b.listId}`}>{titleize(b.factionId)}</a></td>
-          <td>{b.playerName ?? "—"}</td>
+          <td>{b.playerName ?? "–"}</td>
           <td class="num">{b.placing}</td>
-          <td class="num">{b.points ?? "—"}</td>
+          <td class="num">{b.points ?? "–"}</td>
         </tr>
       {/each}
     </tbody>

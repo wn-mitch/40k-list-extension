@@ -1,4 +1,4 @@
--- 0003_list_placement.sql — each entry's standings, so the query API can rank
+-- 0003_list_placement.sql: each entry's standings, so the query API can rank
 -- lists (best-in-faction = top placing per faction) and expose a list's record.
 --
 -- Standings ride on the list row: one normalized list = one player's entry.

@@ -1,6 +1,6 @@
 # 40kdc-meta Query API (`/v1`)
 
-A read-only, key-authed API over the **accepted** competitive list/event data —
+A read-only, key-authed API over the **accepted** competitive list/event data,
 built so external tools and bots can query the dataset (and ease the transition
 off BCP). All responses are JSON.
 
@@ -13,7 +13,7 @@ off BCP). All responses are JSON.
 ## Authentication
 
 The API verifies short-lived **entitlement tokens** minted by the alpacasoft
-keys service — this worker holds no secret, only the pinned public key.
+keys service; this worker holds no secret, only the pinned public key.
 
 1. **Get an access key.** Keys are operator-issued (no self-serve signup yet).
 2. **Redeem it for a token:**
@@ -30,7 +30,7 @@ keys service — this worker holds no secret, only the pinned public key.
    curl -s -H "Authorization: Bearer <token>" https://<ingest-host>/v1/me
    ```
 
-The API never accepts a raw access key — only `keys.alpacasoft.dev` ever sees one.
+The API never accepts a raw access key; only `keys.alpacasoft.dev` ever sees one.
 
 ### Status codes
 
@@ -50,14 +50,14 @@ day (default **5000**). Over the limit returns `429`.
 
 List endpoints are cursor-paginated:
 
-- `limit` — page size (default `50`, max `200`).
-- `cursor` — pass the previous response's `nextKey` to get the next page.
+- `limit`: page size (default `50`, max `200`).
+- `cursor`: pass the previous response's `nextKey` to get the next page.
 - `nextKey` is `null` on the last page.
 
 ## Endpoints
 
 ### `GET /v1/me`
-Returns the authenticated owner — useful to validate a token.
+Returns the authenticated owner (useful to validate a token).
 ```json
 { "ok": true, "owner": "key:my-bot" }
 ```
@@ -78,7 +78,8 @@ One event plus its accepted-list summaries (ordered by placing).
 { "ok": true, "event": { "eventId": "EVT123", "name": "An Open", "date": "…",
   "format": "gt", "region": "us" },
   "lists": [ { "id": "…", "factionId": "chaos-knights", "playerName": "player_ab12cd34",
-    "points": 2000, "placement": { "placing": 1, "wins": 5, "losses": 0, "draws": 0 } } ] }
+    "points": 2000, "warningCount": 0,
+    "placement": { "placing": 1, "wins": 5, "losses": 0, "draws": 0 } } ] }
 ```
 
 ### `GET /v1/lists`
@@ -89,21 +90,43 @@ Query: `eventId` (BCP event id), `factionId`, `detachmentId`, `unitId`,
 { "ok": true, "data": [
   { "id": "…", "eventId": "EVT123", "playerName": "Hero Mcwin",
     "factionId": "chaos-knights", "detachmentIds": ["houndpack-lance"],
-    "battleSize": "Strike Force", "points": 2000, "shareToken": null,
-    "importFormat": "newrecruit-simple",
+    "battleSize": "Strike Force",
+    "points": 2000, "pointsReported": 2000, "pointsComputed": 1995,
+    "declaredLimit": 2000, "warningCount": 1,
+    "shareToken": null, "importFormat": "newrecruit-simple",
     "placement": { "placing": 1, "wins": 5, "losses": 0, "draws": 0 } }
 ], "nextKey": null }
 ```
 
 ### `GET /v1/lists/:id`
 One accepted list, including its units (each with a 40kdc `unitId`, the
-preserved `rawName`, and resolution status).
+preserved `rawName`, and resolution status) and the parser's full warnings.
 ```json
 { "ok": true, "list": { "id": "…", "factionId": "chaos-knights",
   "placement": { "placing": 1, … },
+  "warnings": [ { "code": "points-mismatch",
+    "message": "reported 2000 but cost lines sum to 1995", "raw_name": null } ],
   "units": [ { "unitId": "war-dog-karnivore", "rawName": "War Dog Karnivore",
     "modelCount": 1, "isWarlord": false, "enhancementId": null, "resolved": true } ] } }
 ```
+
+### Points and resolution semantics
+
+This API archives lists as pasted; it does not validate them.
+
+- `points` is the headline total: the figure the player pasted when the source
+  reported one, else the parser's computed sum.
+- `pointsReported` (as pasted) and `pointsComputed` (summed from cost lines) are
+  kept distinct and never reconciled. When they diverge, the list carries a
+  `points-mismatch` warning. `declaredLimit` is the cap parsed from the
+  battle-size label (e.g. 2000), not an enforced bound.
+- `resolved: true` on a unit means its name matched a 40kdc entity. It is not a
+  legality verdict: detachment rules, enhancement limits, and points caps are
+  not checked.
+- `warningCount` / `warnings` surface the importer's diagnostics verbatim
+  (`points-mismatch`, `unit-unresolved`, `detachment-points-exceeded`, ...).
+  Both are `null` on rows captured before diagnostics existed (re-populated as
+  those rows are reprocessed).
 
 ### `GET /v1/stats/units`
 Most-played units across accepted lists in scope.
@@ -141,4 +164,4 @@ Query: `format`, `factionId`, `since`.
 - Respect `429` with a back-off until the next UTC day.
 - `factionId`, `unitId`, and `detachmentId` are
   [`@alpaca-software/40kdc-data`](https://www.npmjs.com/package/@alpaca-software/40kdc-data)
-  entity IDs — the same IDs the normalizer resolves to.
+  entity IDs, the same IDs the normalizer resolves to.

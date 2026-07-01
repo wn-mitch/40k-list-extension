@@ -47,7 +47,7 @@
 <h1>Consent ops</h1>
 <p class="sub">
   Set a player's consent durably (survives later captures and reprocessing). Naming is opt-in;
-  exclusion is identity-suppression — the anonymized list stays in aggregate stats.
+  exclusion is identity-suppression; the anonymized list stays in aggregate stats.
 </p>
 
 {#if !adminAuth.token}

@@ -4,7 +4,7 @@
 
 /**
  * Discriminate a pasted secret. A pre-redeemed entitlement token is a
- * `<base64url>.<base64url>` envelope — it contains a dot that is neither the
+ * `<base64url>.<base64url>` envelope; it contains a dot that is neither the
  * first nor the last character. base64url itself never contains a `.`, so the
  * separator is unambiguous; anything without it is treated as a raw access key
  * to redeem at the keys service.
@@ -23,13 +23,13 @@ export function looksLikeToken(secret: string): boolean {
 export function adminErrorMessage(status: number, serverError?: string): string {
   switch (status) {
     case 401:
-      return "Token rejected (missing, malformed, or expired) — sign in again.";
+      return "Token rejected (missing, malformed, or expired); sign in again.";
     case 403:
-      return "That token is valid but not an admin — its owner is not in ADMIN_OWNERS.";
+      return "That token is valid but not an admin; its owner is not in ADMIN_OWNERS.";
     case 501:
       return "Admin is not configured on the server (no pinned signer or no ADMIN_OWNERS).";
     case 429:
-      return "Daily quota exceeded — try again later.";
+      return "Daily quota exceeded; try again later.";
     default:
       return serverError && serverError.trim() ? serverError : `Request failed (HTTP ${status}).`;
   }

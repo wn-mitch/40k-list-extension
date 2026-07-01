@@ -14,7 +14,7 @@ const CAPTURE_PATH_RE = /^\/v1\/(armylists|events|pairings)(\/|$)/;
 
 /**
  * Capture rule: a JSON response from BCP's API host on a data-bearing endpoint.
- * Positive allowlist — anything not explicitly matched is ignored.
+ * Positive allowlist: anything not explicitly matched is ignored.
  */
 export function shouldCapture(url: string, contentType: string | null): boolean {
   let parsed: URL;

@@ -1,5 +1,5 @@
 /**
- * Phase 3 — normalize captured BCP army lists into the D1 projection.
+ * Phase 3: normalize captured BCP army lists into the D1 projection.
  *
  * Split in two so the meaty logic is pure and unit-testable without a database:
  *   - {@link planProjection}: extract `/v1/armylists` responses from a
@@ -9,7 +9,7 @@
  *
  * R2 raw is the source of truth; D1 is a rebuildable projection stamped with
  * `parser_version`, so {@link reprocessSubmission} re-derives rows from raw when
- * the parser improves — a rerun, not a migration.
+ * the parser improves (a rerun, not a migration).
  *
  * Privacy: only `bcp_player_id_hash` is persisted (sha256 of the BCP player id);
  * display names are never written here (consent defaults to 'unknown').
@@ -58,6 +58,11 @@ export interface PlannedList {
   detachmentIds: string[];
   battleSize: string | null;
   points: number | null;
+  pointsReported: number | null;
+  pointsComputed: number | null;
+  declaredLimit: number | null;
+  /** Importer warnings ({code, message, raw_name}), persisted as JSON. */
+  warnings: { code: string; message: string; raw_name: string | null }[];
   shareToken: string | null;
   importFormat: string | null;
   parserVersion: string;
@@ -140,7 +145,7 @@ function toCapture(armyList: BcpArmyListResponse): BcpListCapture {
   return {
     eventId: armyList.eventId ?? armyList.event?.id ?? "",
     playerId: armyList.playerId ?? armyList.player?.id ?? null,
-    // Never persist the display name — only the hashed player id is stored.
+    // Never persist the display name; only the hashed player id is stored.
     playerName: null,
     listText: armyList.armyListText,
     placement: metrics
@@ -190,6 +195,10 @@ export async function planProjection(source: {
       detachmentIds: normalized.detachment_ids,
       battleSize: normalized.battle_size,
       points: normalized.points,
+      pointsReported: normalized.points_reported,
+      pointsComputed: normalized.points_computed,
+      declaredLimit: normalized.declared_limit,
+      warnings: normalized.warnings,
       shareToken: normalized.share_token,
       importFormat: normalized.format,
       parserVersion: normalized.parser_version,
@@ -353,8 +362,8 @@ export async function applyProjection(
     if (!existing) {
       listId = crypto.randomUUID();
       await env.DB.prepare(
-        `INSERT INTO lists (id, event_id, player_id, faction_id, detachment_ids, battle_size, points, share_token, content_hash, raw_text_r2_key, import_format, parser_version, first_submission_id, captured_at, placing, wins, losses, draws)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO lists (id, event_id, player_id, faction_id, detachment_ids, battle_size, points, points_reported, points_computed, declared_limit, warnings, share_token, content_hash, raw_text_r2_key, import_format, parser_version, first_submission_id, captured_at, placing, wins, losses, draws)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
         .bind(
           listId,
@@ -364,6 +373,10 @@ export async function applyProjection(
           JSON.stringify(list.detachmentIds),
           list.battleSize,
           list.points,
+          list.pointsReported,
+          list.pointsComputed,
+          list.declaredLimit,
+          JSON.stringify(list.warnings),
           list.shareToken,
           list.contentHash,
           rawTextKey,
@@ -385,7 +398,7 @@ export async function applyProjection(
       derive = existing.parser_version !== list.parserVersion;
       if (derive) {
         await env.DB.prepare(
-          `UPDATE lists SET event_id = COALESCE(?, event_id), player_id = COALESCE(?, player_id), faction_id = ?, detachment_ids = ?, battle_size = ?, points = ?, share_token = ?, import_format = ?, parser_version = ?, raw_text_r2_key = ?, placing = ?, wins = ?, losses = ?, draws = ? WHERE id = ?`,
+          `UPDATE lists SET event_id = COALESCE(?, event_id), player_id = COALESCE(?, player_id), faction_id = ?, detachment_ids = ?, battle_size = ?, points = ?, points_reported = ?, points_computed = ?, declared_limit = ?, warnings = ?, share_token = ?, import_format = ?, parser_version = ?, raw_text_r2_key = ?, placing = ?, wins = ?, losses = ?, draws = ? WHERE id = ?`,
         )
           .bind(
             eventId,
@@ -394,6 +407,10 @@ export async function applyProjection(
             JSON.stringify(list.detachmentIds),
             list.battleSize,
             list.points,
+            list.pointsReported,
+            list.pointsComputed,
+            list.declaredLimit,
+            JSON.stringify(list.warnings),
             list.shareToken,
             list.importFormat,
             list.parserVersion,
@@ -433,6 +450,22 @@ export async function projectSubmission(
   return applyProjection(env, plan, ctx);
 }
 
+/**
+ * Record why a submission's projection failed (or clear the record with null).
+ * Truncated so a pathological error message can't bloat the row; the full error
+ * still goes to the log at the call site.
+ */
+export async function setProjectionError(
+  env: ProjectionEnv,
+  submissionId: string,
+  err: unknown | null,
+): Promise<void> {
+  const message = err == null ? null : String(err).slice(0, 500);
+  await env.DB.prepare("UPDATE submissions SET projection_error = ? WHERE id = ?")
+    .bind(message, submissionId)
+    .run();
+}
+
 /** Re-derive D1 rows for a submission from its retained raw payload in R2. */
 export async function reprocessSubmission(
   env: ProjectionEnv,
@@ -450,8 +483,11 @@ export async function reprocessSubmission(
   const raw = await object.json<unknown>();
 
   const plan = await planProjection({ raw });
-  return applyProjection(env, plan, {
+  const summary = await applyProjection(env, plan, {
     submissionId,
     capturedAt: sub.received_at,
   });
+  // A successful rerun supersedes any failure recorded by an earlier attempt.
+  await setProjectionError(env, submissionId, null);
+  return summary;
 }
